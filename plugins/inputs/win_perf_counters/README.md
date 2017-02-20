@@ -22,6 +22,11 @@ as counters used when performance monitoring
 
 Plugin wide entries are underneath `[[inputs.win_perf_counters]]`.
 
+#### ExcludeObjectNames
+*Optional*
+
+Bool, if set to `true` will not tag the ObjectName of the counters.
+
 #### PrintValid
 
 Bool, if set to `true` will print out all matching performance objects.
@@ -103,13 +108,6 @@ This key only has an effect if Instances is set to "*"
 and you would also like all instances containg _Total returned,
 like "_Total", "0,_Total" and so on where applicable
 (Processor Information is one example).
-
-#### ExcludeObjectName
-*Optional*
-
-This key is optional, it is a simple bool.
-If it is not set to true or included, it is treated as false.
-If true then the ObjectName tag will be excluded.
 
 #### WarnOnMissing
 *Optional*

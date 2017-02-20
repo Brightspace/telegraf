@@ -73,21 +73,21 @@ var testConfigParsed bool
 var testObject string
 
 type Win_PerfCounters struct {
-	PrintValid      bool
-	TestName        string
-	PreVistaSupport bool
-	Object          []perfobject
+	PrintValid         bool
+	TestName           string
+	PreVistaSupport    bool
+	Object             []perfobject
+	ExcludeObjectNames bool
 }
 
 type perfobject struct {
-	ObjectName        string
-	Counters          []string
-	Instances         []string
-	Measurement       string
-	WarnOnMissing     bool
-	FailOnMissing     bool
-	IncludeTotal      bool
-	ExcludeObjectName bool
+	ObjectName    string
+	Counters      []string
+	Instances     []string
+	Measurement   string
+	WarnOnMissing bool
+	FailOnMissing bool
+	IncludeTotal  bool
 }
 
 // Parsed configuration ends up here after it has been validated for valid
@@ -97,22 +97,21 @@ type itemList struct {
 }
 
 type item struct {
-	query             string
-	objectName        string
-	counter           string
-	instance          string
-	measurement       string
-	include_total     bool
-	excludeObjectName bool
-	handle            PDH_HQUERY
-	counterHandle     PDH_HCOUNTER
+	query         string
+	objectName    string
+	counter       string
+	instance      string
+	measurement   string
+	include_total bool
+	handle        PDH_HQUERY
+	counterHandle PDH_HCOUNTER
 }
 
 var sanitizedChars = strings.NewReplacer("/sec", "_persec", "/Sec", "_persec",
 	" ", "_", "%", "Percent", `\`, "")
 
 func (m *Win_PerfCounters) AddItem(metrics *itemList, query string, objectName string, counter string, instance string,
-	measurement string, include_total bool, excludeObjectName bool) error {
+	measurement string, include_total bool) error {
 
 	var handle PDH_HQUERY
 	var counterHandle PDH_HCOUNTER
@@ -131,7 +130,7 @@ func (m *Win_PerfCounters) AddItem(metrics *itemList, query string, objectName s
 	}
 
 	temp := &item{query, objectName, counter, instance, measurement,
-		include_total, excludeObjectName, handle, counterHandle}
+		include_total, handle, counterHandle}
 	index := len(gItemList)
 	gItemList[index] = temp
 
@@ -168,7 +167,7 @@ func (m *Win_PerfCounters) ParseConfig(metrics *itemList) error {
 					}
 
 					err := m.AddItem(metrics, query, objectname, counter, instance,
-						PerfObject.Measurement, PerfObject.IncludeTotal, PerfObject.ExcludeObjectName)
+						PerfObject.Measurement, PerfObject.IncludeTotal)
 
 					if err == nil {
 						if m.PrintValid {
@@ -277,7 +276,7 @@ func (m *Win_PerfCounters) Gather(acc telegraf.Accumulator) error {
 						if s != "" {
 							tags["instance"] = s
 						}
-						if !metric.excludeObjectName {
+						if !m.ExcludeObjectNames {
 							tags["objectname"] = metric.objectName
 						}
 						fields[sanitizedChars.Replace(metric.counter)] =

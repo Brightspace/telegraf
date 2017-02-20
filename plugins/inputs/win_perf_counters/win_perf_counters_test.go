@@ -26,17 +26,15 @@ func TestWinPerfcountersConfigGet1(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -62,17 +60,15 @@ func TestWinPerfcountersConfigGet2(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -111,17 +107,15 @@ func TestWinPerfcountersConfigGet3(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -162,17 +156,15 @@ func TestWinPerfcountersConfigGet4(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -214,17 +206,15 @@ func TestWinPerfcountersConfigGet5(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -264,17 +254,15 @@ func TestWinPerfcountersConfigGet6(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -302,17 +290,15 @@ func TestWinPerfcountersConfigGet7(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = false
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -352,17 +338,15 @@ func TestWinPerfcountersConfigError1(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -388,17 +372,15 @@ func TestWinPerfcountersConfigError2(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -424,17 +406,15 @@ func TestWinPerfcountersConfigError3(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -461,17 +441,15 @@ func TestWinPerfcountersCollect1(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -511,17 +489,15 @@ func TestWinPerfcountersCollect2(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = false
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
@@ -553,7 +529,7 @@ func TestWinPerfcountersCollect2(t *testing.T) {
 	acc.AssertContainsTaggedFields(t, measurement, fields, tags)
 }
 
-func TestWinPerfcountersCollectExcludeObjectName(t *testing.T) {
+func TestWinPerfcountersCollectExcludeObjectNames(t *testing.T) {
 
 	var instances = make([]string, 1)
 	var counters = make([]string, 1)
@@ -569,22 +545,25 @@ func TestWinPerfcountersCollectExcludeObjectName(t *testing.T) {
 	var warnonmissing bool = false
 	var failonmissing bool = true
 	var includetotal bool = false
-	var excludeobjectname bool = true
 
 	PerfObject := perfobject{
-		ObjectName:        objectname,
-		Instances:         instances,
-		Counters:          counters,
-		Measurement:       measurement,
-		WarnOnMissing:     warnonmissing,
-		FailOnMissing:     failonmissing,
-		IncludeTotal:      includetotal,
-		ExcludeObjectName: excludeobjectname,
+		ObjectName:    objectname,
+		Instances:     instances,
+		Counters:      counters,
+		Measurement:   measurement,
+		WarnOnMissing: warnonmissing,
+		FailOnMissing: failonmissing,
+		IncludeTotal:  includetotal,
 	}
 
 	perfobjects[0] = PerfObject
 
-	m := Win_PerfCounters{PrintValid: false, TestName: "CollectExcludeObjectName", Object: perfobjects}
+	m := Win_PerfCounters{
+		ExcludeObjectNames: true,
+		PrintValid:         false,
+		TestName:           "CollectExcludeObjectName",
+		Object:             perfobjects,
+	}
 	var acc testutil.Accumulator
 	err := m.Gather(&acc)
 	require.NoError(t, err)
