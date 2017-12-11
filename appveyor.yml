@@ -1,5 +1,5 @@
 image: Previous Visual Studio 2015
-version: "{build}"
+version: "1.6.0-rc3-build{build}"
 
 cache:
  - C:\Cache
@@ -26,9 +26,11 @@ install:
 build_script:
   - cmd: C:\GnuWin32\bin\make deps
   - cmd: C:\GnuWin32\bin\make telegraf
+  - nuget pack d2l.telegraf.nuspec -version "%APPVEYOR_BUILD_VERSION%" -properties "gitsha=%APPVEYOR_REPO_COMMIT%"
 
 test_script:
   - cmd: C:\GnuWin32\bin\make test-windows
 
 artifacts:
   - path: telegraf.exe
+  - path: '*.nupkg'
