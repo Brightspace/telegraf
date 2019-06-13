@@ -297,7 +297,7 @@ func (m *Win_PerfCounters) Gather(acc telegraf.Accumulator) error {
 		}
 		//some counters need two data samples before computing a value
 		if err = m.query.CollectData(); err != nil {
-			log.Printf("CollectData failed")
+			log.Printf("CollectData failed: %+v", m.counters)
 			return err
 		}
 		m.lastRefreshed = time.Now()
