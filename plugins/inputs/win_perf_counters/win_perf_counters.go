@@ -287,14 +287,17 @@ func (m *Win_PerfCounters) Gather(acc telegraf.Accumulator) error {
 		}
 
 		if err = m.query.Open(); err != nil {
+			log.Printf("Open failed")
 			return err
 		}
 
 		if err = m.ParseConfig(); err != nil {
+			log.Printf("ParseConfig failed")
 			return err
 		}
 		//some counters need two data samples before computing a value
 		if err = m.query.CollectData(); err != nil {
+			log.Printf("CollectData failed")
 			return err
 		}
 		m.lastRefreshed = time.Now()
@@ -308,11 +311,13 @@ func (m *Win_PerfCounters) Gather(acc telegraf.Accumulator) error {
 	if m.UsePerfCounterTime && m.query.IsVistaOrNewer() {
 		timestamp, err = m.query.CollectDataWithTime()
 		if err != nil {
+			log.Printf("CollectDataWithTime failed")
 			return err
 		}
 	} else {
 		timestamp = time.Now()
 		if err = m.query.CollectData(); err != nil {
+			log.Printf("CollectData failed")
 			return err
 		}
 	}
@@ -327,6 +332,7 @@ func (m *Win_PerfCounters) Gather(acc telegraf.Accumulator) error {
 			} else {
 				//ignore invalid data  as some counters from process instances returns this sometimes
 				if !isKnownCounterDataError(err) {
+					log.Printf("GetFormattedCounterValueDouble failed")
 					return fmt.Errorf("error while getting value for counter %s: %v", metric.counterPath, err)
 				}
 			}
@@ -360,6 +366,7 @@ func (m *Win_PerfCounters) Gather(acc telegraf.Accumulator) error {
 			} else {
 				//ignore invalid data as some counters from process instances returns this sometimes
 				if !isKnownCounterDataError(err) {
+					log.Printf("GetFormattedCounterArrayDouble failed")
 					return fmt.Errorf("error while getting value for counter %s: %v", metric.counterPath, err)
 				}
 			}
