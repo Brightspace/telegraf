@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/influxdata/telegraf/plugins/inputs/postgresql"
 	"github.com/influxdata/telegraf/testutil"
@@ -13,6 +14,7 @@ import (
 
 func queryRunner(t *testing.T, q query) *testutil.Accumulator {
 	p := &Postgresql{
+		Log: testutil.Logger{},
 		Service: postgresql.Service{
 			Address: fmt.Sprintf(
 				"host=%s user=postgres sslmode=disable",
@@ -25,7 +27,7 @@ func queryRunner(t *testing.T, q query) *testutil.Accumulator {
 	}
 	var acc testutil.Accumulator
 	p.Start(&acc)
-
+	p.Init()
 	require.NoError(t, acc.GatherError(p.Gather))
 	return &acc
 }
@@ -125,6 +127,13 @@ func TestPostgresqlQueryOutputTests(t *testing.T) {
 			assert.True(t, found)
 			assert.Equal(t, true, v)
 		},
+		"SELECT timestamp'1980-07-23' as ts, true AS myvalue": func(acc *testutil.Accumulator) {
+			expectedTime := time.Date(1980, 7, 23, 0, 0, 0, 0, time.UTC)
+			v, found := acc.BoolField(measurement, "myvalue")
+			assert.True(t, found)
+			assert.Equal(t, true, v)
+			assert.True(t, acc.HasTimestamp(measurement, expectedTime))
+		},
 	}
 
 	for q, assertions := range examples {
@@ -133,6 +142,7 @@ func TestPostgresqlQueryOutputTests(t *testing.T) {
 			Version:    901,
 			Withdbname: false,
 			Tagvalue:   "",
+			Timestamp:  "ts",
 		}})
 		assertions(acc)
 	}
@@ -201,12 +211,39 @@ func TestPostgresqlFieldOutput(t *testing.T) {
 	}
 }
 
+func TestPostgresqlSqlScript(t *testing.T) {
+	q := query{{
+		Script:     "testdata/test.sql",
+		Version:    901,
+		Withdbname: false,
+		Tagvalue:   "",
+	}}
+	p := &Postgresql{
+		Log: testutil.Logger{},
+		Service: postgresql.Service{
+			Address: fmt.Sprintf(
+				"host=%s user=postgres sslmode=disable",
+				testutil.GetLocalHost(),
+			),
+			IsPgBouncer: false,
+		},
+		Databases: []string{"postgres"},
+		Query:     q,
+	}
+	var acc testutil.Accumulator
+	p.Start(&acc)
+	p.Init()
+
+	require.NoError(t, acc.GatherError(p.Gather))
+}
+
 func TestPostgresqlIgnoresUnwantedColumns(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
 
 	p := &Postgresql{
+		Log: testutil.Logger{},
 		Service: postgresql.Service{
 			Address: fmt.Sprintf(
 				"host=%s user=postgres sslmode=disable",
@@ -226,7 +263,10 @@ func TestPostgresqlIgnoresUnwantedColumns(t *testing.T) {
 }
 
 func TestAccRow(t *testing.T) {
-	p := Postgresql{}
+	p := Postgresql{
+		Log: testutil.Logger{},
+	}
+
 	var acc testutil.Accumulator
 	columns := []string{"datname", "cat"}
 

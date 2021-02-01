@@ -148,6 +148,14 @@ func (p *testProc) Percent(interval time.Duration) (float64, error) {
 	return 0, nil
 }
 
+func (p *testProc) MemoryPercent() (float32, error) {
+	return 0, nil
+}
+
+func (p *testProc) CreateTime() (int64, error) {
+	return 0, nil
+}
+
 func (p *testProc) Times() (*cpu.TimesStat, error) {
 	return &cpu.TimesStat{}, nil
 }
@@ -393,4 +401,21 @@ func TestProcstatLookupMetric(t *testing.T) {
 	err := acc.GatherError(p.Gather)
 	require.NoError(t, err)
 	require.Equal(t, len(p.procs)+1, len(acc.Metrics))
+}
+
+func TestGather_SameTimestamps(t *testing.T) {
+	var acc testutil.Accumulator
+	pidfile := "/path/to/pidfile"
+
+	p := Procstat{
+		PidFile:         pidfile,
+		createPIDFinder: pidFinder([]PID{pid}, nil),
+		createProcess:   newTestProc,
+	}
+	require.NoError(t, acc.GatherError(p.Gather))
+
+	procstat, _ := acc.Get("procstat")
+	procstat_lookup, _ := acc.Get("procstat_lookup")
+
+	require.Equal(t, procstat.Time, procstat_lookup.Time)
 }

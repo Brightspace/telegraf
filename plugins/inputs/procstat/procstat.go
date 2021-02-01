@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/influxdata/telegraf"
@@ -34,6 +36,9 @@ type Procstat struct {
 	CGroup      string `toml:"cgroup"`
 	PidTag      bool
 	WinService  string `toml:"win_service"`
+	Mode        string
+
+	solarisMode bool
 
 	finder PIDFinder
 
@@ -69,9 +74,15 @@ var sampleConfig = `
   ## When true add the full cmdline as a tag.
   # cmdline_tag = false
 
-  ## Add PID as a tag instead of a field; useful to differentiate between
-  ## processes whose tags are otherwise the same.  Can create a large number
-  ## of series, use judiciously.
+  ## Mode to use when calculating CPU usage. Can be one of 'solaris' or 'irix'.
+  # mode = "irix"
+
+  ## Add the PID as a tag instead of as a field.  When collecting multiple
+  ## processes with otherwise matching tags this setting should be enabled to
+  ## ensure each process has a unique identity.
+  ##
+  ## Enabling this option may result in a large number of series, especially
+  ## when processes have a short lifetime.
   # pid_tag = false
 
   ## Method to use when finding process IDs.  Can be one of 'pgrep', or
@@ -107,6 +118,8 @@ func (p *Procstat) Gather(acc telegraf.Accumulator) error {
 	}
 
 	pids, tags, err := p.findPids(acc)
+	now := time.Now()
+
 	if err != nil {
 		fields := map[string]interface{}{
 			"pid_count":   0,
@@ -117,7 +130,7 @@ func (p *Procstat) Gather(acc telegraf.Accumulator) error {
 			"pid_finder": p.PidFinder,
 			"result":     "lookup_error",
 		}
-		acc.AddFields("procstat_lookup", fields, tags)
+		acc.AddFields("procstat_lookup", fields, tags, now)
 		return err
 	}
 
@@ -129,7 +142,7 @@ func (p *Procstat) Gather(acc telegraf.Accumulator) error {
 	p.procs = procs
 
 	for _, proc := range p.procs {
-		p.addMetric(proc, acc)
+		p.addMetric(proc, acc, now)
 	}
 
 	fields := map[string]interface{}{
@@ -139,13 +152,13 @@ func (p *Procstat) Gather(acc telegraf.Accumulator) error {
 	}
 	tags["pid_finder"] = p.PidFinder
 	tags["result"] = "success"
-	acc.AddFields("procstat_lookup", fields, tags)
+	acc.AddFields("procstat_lookup", fields, tags, now)
 
 	return nil
 }
 
 // Add metrics a single Process
-func (p *Procstat) addMetric(proc Process, acc telegraf.Accumulator) {
+func (p *Procstat) addMetric(proc Process, acc telegraf.Accumulator, t time.Time) {
 	var prefix string
 	if p.Prefix != "" {
 		prefix = p.Prefix + "_"
@@ -216,6 +229,11 @@ func (p *Procstat) addMetric(proc Process, acc telegraf.Accumulator) {
 		fields[prefix+"write_bytes"] = io.WriteBytes
 	}
 
+	createdAt, err := proc.CreateTime() //Returns epoch in ms
+	if err == nil {
+		fields[prefix+"created_at"] = createdAt * 1000000 //Convert ms to ns
+	}
+
 	cpu_time, err := proc.Times()
 	if err == nil {
 		fields[prefix+"cpu_time_user"] = cpu_time.User
@@ -226,14 +244,17 @@ func (p *Procstat) addMetric(proc Process, acc telegraf.Accumulator) {
 		fields[prefix+"cpu_time_irq"] = cpu_time.Irq
 		fields[prefix+"cpu_time_soft_irq"] = cpu_time.Softirq
 		fields[prefix+"cpu_time_steal"] = cpu_time.Steal
-		fields[prefix+"cpu_time_stolen"] = cpu_time.Stolen
 		fields[prefix+"cpu_time_guest"] = cpu_time.Guest
 		fields[prefix+"cpu_time_guest_nice"] = cpu_time.GuestNice
 	}
 
 	cpu_perc, err := proc.Percent(time.Duration(0))
 	if err == nil {
-		fields[prefix+"cpu_usage"] = cpu_perc
+		if p.solarisMode {
+			fields[prefix+"cpu_usage"] = cpu_perc / float64(runtime.NumCPU())
+		} else {
+			fields[prefix+"cpu_usage"] = cpu_perc
+		}
 	}
 
 	mem, err := proc.MemoryInfo()
@@ -244,6 +265,11 @@ func (p *Procstat) addMetric(proc Process, acc telegraf.Accumulator) {
 		fields[prefix+"memory_data"] = mem.Data
 		fields[prefix+"memory_stack"] = mem.Stack
 		fields[prefix+"memory_locked"] = mem.Locked
+	}
+
+	mem_perc, err := proc.MemoryPercent()
+	if err == nil {
+		fields[prefix+"memory_usage"] = mem_perc
 	}
 
 	rlims, err := proc.RlimitUsage(true)
@@ -285,7 +311,7 @@ func (p *Procstat) addMetric(proc Process, acc telegraf.Accumulator) {
 		}
 	}
 
-	acc.AddFields("procstat", fields, proc.Tags())
+	acc.AddFields("procstat", fields, proc.Tags(), t)
 }
 
 // Update monitored Processes
@@ -398,10 +424,10 @@ func (p *Procstat) systemdUnitPIDs() ([]PID, error) {
 		if !bytes.Equal(kv[0], []byte("MainPID")) {
 			continue
 		}
-		if len(kv[1]) == 0 {
+		if len(kv[1]) == 0 || bytes.Equal(kv[1], []byte("0")) {
 			return nil, nil
 		}
-		pid, err := strconv.Atoi(string(kv[1]))
+		pid, err := strconv.ParseInt(string(kv[1]), 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid pid '%s'", kv[1])
 		}
@@ -426,7 +452,7 @@ func (p *Procstat) cgroupPIDs() ([]PID, error) {
 		if len(pidBS) == 0 {
 			continue
 		}
-		pid, err := strconv.Atoi(string(pidBS))
+		pid, err := strconv.ParseInt(string(pidBS), 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid pid '%s'", pidBS)
 		}
@@ -447,6 +473,14 @@ func (p *Procstat) winServicePIDs() ([]PID, error) {
 	pids = append(pids, PID(pid))
 
 	return pids, nil
+}
+
+func (p *Procstat) Init() error {
+	if strings.ToLower(p.Mode) == "solaris" {
+		p.solarisMode = true
+	}
+
+	return nil
 }
 
 func init() {
