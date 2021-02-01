@@ -33,7 +33,6 @@ test_script:
 
 artifacts:
   - path: telegraf.exe
-  - path: '*.nupkg'
 
 deploy_script:
   - nuget pack d2l.telegraf.nuspec -version "%APPVEYOR_BUILD_VERSION%" -properties "gitsha=%APPVEYOR_REPO_COMMIT%"
