@@ -36,5 +36,5 @@ artifacts:
 
 deploy_script:
   - nuget pack d2l.telegraf.nuspec -version "%APPVEYOR_BUILD_VERSION%" -properties "gitsha=%APPVEYOR_REPO_COMMIT%"
-  - aws codeartifact login --tool nuget --domain d2l --repository private --region us-east-1
+  - aws codeartifact login --tool nuget --domain d2l --repository private --region us-east-1 --duration-seconds 900
   - dotnet nuget push *.nupkg --source d2l/private --api-key aws
