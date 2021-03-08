@@ -21,7 +21,13 @@ func createKinesisRecord(
 }
 
 type kinesisRecord struct {
-	Entry       *kinesis.PutRecordsRequestEntry
-	Metrics     int
+
+	// The AWS SDK PutRecords request entry
+	Entry *kinesis.PutRecordsRequestEntry
+
+	// The number of metrics serialized into the entry
+	Metrics int
+
+	// The PutRecords request size of the entry
 	RequestSize int
 }
