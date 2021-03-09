@@ -36,8 +36,8 @@ func Test_kinesisRecordSet_MultipleRecords(t *testing.T) {
 	assert := assert.New(t)
 
 	record1 := createTestKinesisRecord(1, []byte{0xa1})
-	record2 := createTestKinesisRecord(1, []byte{0xb2})
-	record3 := createTestKinesisRecord(1, []byte{0xc3})
+	record2 := createTestKinesisRecord(2, []byte{0xb2})
+	record3 := createTestKinesisRecord(3, []byte{0xc3})
 
 	var iterator kinesisRecordIterator
 	iterator = createKinesisRecordSet([]*kinesisRecord{
