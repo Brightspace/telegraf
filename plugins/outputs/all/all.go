@@ -42,4 +42,7 @@ import (
 	_ "github.com/influxdata/telegraf/plugins/outputs/warp10"
 	_ "github.com/influxdata/telegraf/plugins/outputs/wavefront"
 	_ "github.com/influxdata/telegraf/plugins/outputs/yandex_cloud_monitoring"
+
+	// D2L imports
+	_ "github.com/influxdata/telegraf/plugins/outputs/d2l_kinesis"
 )
