@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/influxdata/telegraf"
+	"github.com/influxdata/telegraf/metric"
 	"github.com/influxdata/telegraf/plugins/serializers"
 	"github.com/influxdata/telegraf/plugins/serializers/influx"
 	"github.com/influxdata/telegraf/testutil"
@@ -187,14 +189,14 @@ func Test_GZipKinesisRecordGenerator_UnderMaxWithFlush(t *testing.T) {
 	})
 }
 
-func Test_GZipKinesisRecordGenerator_AtMaxWithFlush(t *testing.T) {
+func Test_GZipKinesisRecordGenerator_AtMaxWithFlush_FirstRecord(t *testing.T) {
 	assert := assert.New(t)
 
 	metric1 := testutil.TestMetric(1, "metric1")
 	metric1Data := []byte{0xa1, 0xb2, 0xc3, 0xd4, 0xe5}
 
 	metric2 := testutil.TestMetric(1, "metric2")
-	metric2Data := []byte{0xf6, 0xe5, 0xd4, 0xc3, 0xb2}
+	metric2Data := []byte{0xf6}
 
 	mockSerializer := createMockMetricSerializer()
 	mockSerializer.SetupMetricData(metric1, metric1Data)
@@ -233,6 +235,66 @@ func Test_GZipKinesisRecordGenerator_AtMaxWithFlush(t *testing.T) {
 	})
 }
 
+func Test_GZipKinesisRecordGenerator_AtMaxWithFlush_SecondRecord(t *testing.T) {
+	assert := assert.New(t)
+
+	metric1, metric1Err := metric.New(
+		"m",
+		nil,
+		map[string]interface{}{"v": 0},
+		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
+	)
+	assert.NoError(metric1Err)
+
+	metric1Data, metric1DataErr := influxSerializer.Serialize(metric1)
+	assert.NoError(metric1DataErr)
+
+	metric2 := testutil.TestMetric(1, "metric2")
+	metric2Data := []byte{0x88, 0x99, 0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6}
+
+	metric3 := testutil.TestMetric(1, "metric3")
+	metric3Data := []byte{0xf6}
+
+	mockSerializer := createMockMetricSerializer()
+	mockSerializer.SetupMetricData(metric1, metric1Data)
+	mockSerializer.SetupMetricData(metric2, metric2Data)
+	mockSerializer.SetupMetricData(metric3, metric3Data)
+
+	const maxRecordSize int = 62
+	generator := createTestGZipKinesisRecordGenerator(t, maxRecordSize, &mockSerializer)
+	generator.Reset([]telegraf.Metric{
+		metric1,
+		metric2,
+		metric3,
+	})
+
+	record1, err := generator.Next()
+	assert.NoError(err, "Next should not error")
+	assert.NotNil(record1, "Should read first record")
+
+	record2, err := generator.Next()
+	assert.NoError(err, "Next should not error")
+	assert.NotNil(record2, "Should read second record")
+
+	assertEndOfIterator(assert, generator)
+
+	assert.Equal(
+		maxRecordSize,
+		len(record1.Entry.Data),
+		"Should serialize first metric to max record size",
+	)
+
+	assertGZippedKinesisRecord(assert, record1, [][]byte{
+		metric1Data,
+		metric2Data,
+		{}, // empty block after flush
+	})
+
+	assertGZippedKinesisRecord(assert, record2, [][]byte{
+		metric3Data,
+	})
+}
+
 func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_FirstMetric(t *testing.T) {
 	assert := assert.New(t)
 
@@ -240,7 +302,7 @@ func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_FirstMetric(t *testing.T) 
 	metric1Data := []byte{0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6}
 
 	metric2 := testutil.TestMetric(1, "metric2")
-	metric2Data := []byte{0xf6, 0xe5, 0xd4, 0xc3, 0xb2}
+	metric2Data := []byte{0x99}
 
 	mockSerializer := createMockMetricSerializer()
 	mockSerializer.SetupMetricData(metric1, metric1Data)
@@ -268,13 +330,13 @@ func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_SecondMetric(t *testing.T)
 	assert := assert.New(t)
 
 	metric1 := testutil.TestMetric(1, "metric1")
-	metric1Data := []byte{0x01, 0x02}
+	metric1Data := []byte{0x01}
 
 	metric2 := testutil.TestMetric(2, "metric2")
 	metric2Data := []byte{0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6}
 
 	metric3 := testutil.TestMetric(3, "metric3")
-	metric3Data := []byte{0xf6, 0xe5, 0xd4, 0xc3, 0xb2}
+	metric3Data := []byte{0x99}
 
 	mockSerializer := createMockMetricSerializer()
 	mockSerializer.SetupMetricData(metric1, metric1Data)
@@ -356,7 +418,53 @@ func Test_GZipKinesisRecordGenerator_MultipleMetrics_ValidGZip(t *testing.T) {
 	)
 }
 
-func Test_GZipKinesisRecordGenerator_SerializerError(t *testing.T) {
+func Test_GZipKinesisRecordGenerator_SerializerError_OnlyMetric(t *testing.T) {
+	assert := assert.New(t)
+
+	metric := testutil.TestMetric(1, "metric")
+
+	mockSerializer := createMockMetricSerializer()
+	mockSerializer.SetupMetricError(metric, fmt.Errorf("boom"))
+
+	generator := createTestGZipKinesisRecordGenerator(t, 1024, &mockSerializer)
+	generator.Reset([]telegraf.Metric{
+		metric,
+	})
+
+	assertEndOfIterator(assert, generator)
+}
+
+func Test_GZipKinesisRecordGenerator_SerializerError_FirstMetric(t *testing.T) {
+	assert := assert.New(t)
+
+	metric1 := testutil.TestMetric(1, "metric1")
+	metric2, metric2Data := createTestMetric(t, "metric2", influxSerializer)
+	metric3, metric3Data := createTestMetric(t, "metric3", influxSerializer)
+
+	mockSerializer := createMockMetricSerializer()
+	mockSerializer.SetupMetricError(metric1, fmt.Errorf("boom"))
+	mockSerializer.SetupMetricData(metric2, metric2Data)
+	mockSerializer.SetupMetricData(metric3, metric3Data)
+
+	generator := createTestGZipKinesisRecordGenerator(t, 1024, &mockSerializer)
+	generator.Reset([]telegraf.Metric{
+		metric1,
+		metric2,
+		metric3,
+	})
+
+	record1, err := generator.Next()
+	assert.NoError(err, "Next should not error")
+	assert.NotNil(record1, "Should read first record")
+
+	assertEndOfIterator(assert, generator)
+
+	assertGZippedKinesisRecord(assert, record1, [][]byte{
+		concatByteSlices(metric2Data, metric3Data),
+	})
+}
+
+func Test_GZipKinesisRecordGenerator_SerializerError_SecondMetric(t *testing.T) {
 	assert := assert.New(t)
 
 	metric1, metric1Data := createTestMetric(t, "metric1", influxSerializer)
@@ -384,6 +492,80 @@ func Test_GZipKinesisRecordGenerator_SerializerError(t *testing.T) {
 	assertGZippedKinesisRecord(assert, record1, [][]byte{
 		concatByteSlices(metric1Data, metric3Data),
 	})
+}
+
+func Test_GZipKinesisRecordGenerator_SerializerError_LastMetric(t *testing.T) {
+	assert := assert.New(t)
+
+	metric1, metric1Data := createTestMetric(t, "metric1", influxSerializer)
+	metric2 := testutil.TestMetric(1, "metric2")
+
+	mockSerializer := createMockMetricSerializer()
+	mockSerializer.SetupMetricData(metric1, metric1Data)
+	mockSerializer.SetupMetricError(metric2, fmt.Errorf("boom"))
+
+	generator := createTestGZipKinesisRecordGenerator(t, 1024, &mockSerializer)
+	generator.Reset([]telegraf.Metric{
+		metric1,
+		metric2,
+	})
+
+	record1, err := generator.Next()
+	assert.NoError(err, "Next should not error")
+	assert.NotNil(record1, "Should read first record")
+
+	assertEndOfIterator(assert, generator)
+
+	assertGZippedKinesisRecord(assert, record1, [][]byte{
+		metric1Data,
+	})
+}
+
+func Test_GZipKinesisRecordGenerator_MultipleUsages(t *testing.T) {
+	assert := assert.New(t)
+
+	generator := createTestGZipKinesisRecordGenerator(t, 1024, influxSerializer)
+
+	{
+		metric1, metric1Data := createTestMetric(t, "metric1", influxSerializer)
+		metric2, metric2Data := createTestMetric(t, "metric2", influxSerializer)
+
+		// first usage
+		generator.Reset([]telegraf.Metric{
+			metric1,
+			metric2,
+		})
+
+		record, err := generator.Next()
+		assert.NoError(err, "Next should not error")
+		assert.NotNil(record, "Should read record in first usage")
+
+		assertEndOfIterator(assert, generator)
+
+		assertGZippedKinesisRecord(assert, record, [][]byte{
+			concatByteSlices(metric1Data, metric2Data),
+		})
+	}
+	{
+		metric3, metric3Data := createTestMetric(t, "metric3", influxSerializer)
+		metric4, metric4Data := createTestMetric(t, "metric4", influxSerializer)
+
+		// second usage
+		generator.Reset([]telegraf.Metric{
+			metric3,
+			metric4,
+		})
+
+		record, err := generator.Next()
+		assert.NoError(err, "Next should not error")
+		assert.NotNil(record, "Should read record in second usage")
+
+		assertEndOfIterator(assert, generator)
+
+		assertGZippedKinesisRecord(assert, record, [][]byte{
+			concatByteSlices(metric3Data, metric4Data),
+		})
+	}
 }
 
 // ---------------------------------------------------------------------------------
