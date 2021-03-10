@@ -189,6 +189,9 @@ func (e *gZipSizeEstimator) Commit(bytes int) {
 func (e *gZipSizeEstimator) MaxPotentialSizeWith(additionalBytes int) int {
 
 	n := e.bytesPending + additionalBytes
+
+	// Based on Mark Adler's conservative upper bound for the gzip-compressed output
+	// https://stackoverflow.com/questions/48684865/go-gzip-flush-and-determining-size
 	nMaxSize := n + ((n + 7) >> 3) + ((n + 63) >> 6)
 
 	maxPotentialSize := e.bytesCommited + nMaxSize + gzipFlushBlockSize + gzipEndBlockSize + gzipFooterSize
