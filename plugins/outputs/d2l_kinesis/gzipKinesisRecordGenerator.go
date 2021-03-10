@@ -131,11 +131,6 @@ func (g *gzipKinesisRecordGenerator) Next() (*kinesisRecord, error) {
 				continue
 			}
 
-			if !recordSizeEstimator.HasPendingBytes() {
-				g.index = index
-				return g.yieldRecord(recordMetricCount)
-			}
-
 			flushErr := g.writer.Flush()
 			if flushErr != nil {
 				return nil, flushErr
@@ -180,10 +175,6 @@ func createGZipSizeEstimator() gZipSizeEstimator {
 type gZipSizeEstimator struct {
 	bytesCommited int
 	bytesPending  int
-}
-
-func (e *gZipSizeEstimator) HasPendingBytes() bool {
-	return e.bytesPending > 0
 }
 
 func (e *gZipSizeEstimator) RecordBytes(bytes int) {
