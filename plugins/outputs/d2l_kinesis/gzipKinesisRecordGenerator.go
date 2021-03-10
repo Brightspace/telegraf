@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
-	"math"
 
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/influxdata/telegraf"
@@ -12,6 +11,8 @@ import (
 )
 
 const gzipHeaderSize = 10
+const gzipFlushBlockSize = 5
+const gzipEndBlockSize = 5
 const gzipFooterSize = 8
 
 func createGZipKinesisRecordGenerator(
@@ -75,8 +76,8 @@ func (g *gzipKinesisRecordGenerator) yieldRecord(
 	}
 
 	bufferBytes := g.buffer.Bytes()
-	data := make([]byte, len(bufferBytes))
-	copy(data, bufferBytes)
+	data := make([]byte, 0, len(bufferBytes))
+	data = append(data, bufferBytes...)
 
 	partitionKey := g.pkGenerator()
 
@@ -119,7 +120,21 @@ func (g *gzipKinesisRecordGenerator) Next() (*kinesisRecord, error) {
 
 		bytesCount := len(bytes)
 
-		if recordSizeEstimator.MaxPotentialSizeWith(bytesCount) > g.maxRecordSize {
+		maxPotentialSize := recordSizeEstimator.MaxPotentialSizeWith(bytesCount)
+		if maxPotentialSize > g.maxRecordSize {
+
+			if recordMetricCount == 0 {
+				g.log.Warnf(
+					"Dropping excessively large '%s' metric",
+					metric.Name(),
+				)
+				continue
+			}
+
+			if !recordSizeEstimator.HasPendingBytes() {
+				g.index = index
+				return g.yieldRecord(recordMetricCount)
+			}
 
 			flushErr := g.writer.Flush()
 			if flushErr != nil {
@@ -127,17 +142,11 @@ func (g *gzipKinesisRecordGenerator) Next() (*kinesisRecord, error) {
 			}
 
 			// commit the flushed buffer length
-			recordSizeEstimator.Commit(g.buffer.Len())
+			commitSize := g.buffer.Len()
+			recordSizeEstimator.Commit(commitSize)
 
-			if recordSizeEstimator.MaxPotentialSizeWith(bytesCount) > g.maxRecordSize {
-
-				if recordMetricCount == 0 {
-					g.log.Warnf(
-						"Dropping excessively large '%s' metric",
-						metric.Name(),
-					)
-					continue
-				}
+			maxPotentialSize = recordSizeEstimator.MaxPotentialSizeWith(bytesCount)
+			if maxPotentialSize > g.maxRecordSize {
 
 				g.index = index
 				return g.yieldRecord(recordMetricCount)
@@ -163,7 +172,7 @@ func (g *gzipKinesisRecordGenerator) Next() (*kinesisRecord, error) {
 
 func createGZipSizeEstimator() gZipSizeEstimator {
 	return gZipSizeEstimator{
-		bytesCommited: gzipHeaderSize + gzipFooterSize,
+		bytesCommited: gzipHeaderSize,
 		bytesPending:  0,
 	}
 }
@@ -173,19 +182,24 @@ type gZipSizeEstimator struct {
 	bytesPending  int
 }
 
+func (e *gZipSizeEstimator) HasPendingBytes() bool {
+	return e.bytesPending > 0
+}
+
 func (e *gZipSizeEstimator) RecordBytes(bytes int) {
 	e.bytesPending += bytes
 }
 
 func (e *gZipSizeEstimator) Commit(bytes int) {
-	e.bytesCommited = bytes + gzipFooterSize
+	e.bytesCommited = bytes
 	e.bytesPending = 0
 }
 
 func (e *gZipSizeEstimator) MaxPotentialSizeWith(additionalBytes int) int {
 
-	bytesCount := e.bytesPending + additionalBytes
-	blocksOverhead := 5 * int((math.Floor(float64(bytesCount)/16383) + 1))
+	n := e.bytesPending + additionalBytes
+	nMaxSize := n + ((n + 7) >> 3) + ((n + 63) >> 6)
 
-	return e.bytesCommited + bytesCount + blocksOverhead
+	maxPotentialSize := e.bytesCommited + nMaxSize + gzipFlushBlockSize + gzipEndBlockSize + gzipFooterSize
+	return maxPotentialSize
 }
