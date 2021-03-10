@@ -235,7 +235,7 @@ func Test_GZipKinesisRecordGenerator_AtMaxWithFlush_FirstRecord(t *testing.T) {
 	})
 }
 
-func Test_GZipKinesisRecordGenerator_AtMaxWithFlush_SecondRecord(t *testing.T) {
+func Test_GZipKinesisRecordGenerator_AtMaxWithFlush_MiddleRecord(t *testing.T) {
 	assert := assert.New(t)
 
 	metric1, metric1Err := metric.New(
@@ -295,6 +295,24 @@ func Test_GZipKinesisRecordGenerator_AtMaxWithFlush_SecondRecord(t *testing.T) {
 	})
 }
 
+func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_OnlyMetric(t *testing.T) {
+	assert := assert.New(t)
+
+	metric := testutil.TestMetric(2, "metric2")
+	metricData := []byte{0xa1, 0xb2, 0xc3, 0xd4}
+
+	mockSerializer := createMockMetricSerializer()
+	mockSerializer.SetupMetricData(metric, metricData)
+
+	const maxRecordSize int = 33
+	generator := createTestGZipKinesisRecordGenerator(t, maxRecordSize, &mockSerializer)
+	generator.Reset([]telegraf.Metric{
+		metric,
+	})
+
+	assertEndOfIterator(assert, generator)
+}
+
 func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_FirstMetric(t *testing.T) {
 	assert := assert.New(t)
 
@@ -326,7 +344,7 @@ func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_FirstMetric(t *testing.T) 
 	})
 }
 
-func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_SecondMetric(t *testing.T) {
+func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_MiddleMetric(t *testing.T) {
 	assert := assert.New(t)
 
 	metric1 := testutil.TestMetric(1, "metric1")
@@ -371,51 +389,36 @@ func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_SecondMetric(t *testing.T)
 	})
 }
 
-func Test_GZipKinesisRecordGenerator_SingleMetric_ValidGZip(t *testing.T) {
+func Test_GZipKinesisRecordGenerator_OverMaxWithFlush_LastMetric(t *testing.T) {
 	assert := assert.New(t)
 
-	metric, metricData := createTestMetric(t, "test", influxSerializer)
+	metric1 := testutil.TestMetric(1, "metric1")
+	metric1Data := []byte{0x01}
 
-	generator := createTestGZipKinesisRecordGenerator(t, 1024, influxSerializer)
-	generator.Reset([]telegraf.Metric{metric})
+	metric2 := testutil.TestMetric(2, "metric2")
+	metric2Data := []byte{0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6}
+
+	mockSerializer := createMockMetricSerializer()
+	mockSerializer.SetupMetricData(metric1, metric1Data)
+	mockSerializer.SetupMetricData(metric2, metric2Data)
+
+	const maxRecordSize int = 35
+	generator := createTestGZipKinesisRecordGenerator(t, maxRecordSize, &mockSerializer)
+	generator.Reset([]telegraf.Metric{
+		metric1,
+		metric2,
+	})
 
 	record1, err := generator.Next()
 	assert.NoError(err, "Next should not error")
-	assert.NotNil(record1)
+	assert.NotNil(record1, "Should read first record")
 
 	assertEndOfIterator(assert, generator)
 
-	decompressed, decompressErr := gzipDecompress(record1.Entry.Data)
-	assert.NoError(decompressErr, "Should decompress data")
-	assert.Equal(
-		base64.StdEncoding.EncodeToString(metricData),
-		base64.StdEncoding.EncodeToString(decompressed),
-		"Decompressed data should equal original metric bytes",
-	)
-}
-
-func Test_GZipKinesisRecordGenerator_MultipleMetrics_ValidGZip(t *testing.T) {
-	assert := assert.New(t)
-
-	metric1, metric1Data := createTestMetric(t, "metric1", influxSerializer)
-	metric2, metric2Data := createTestMetric(t, "metric2", influxSerializer)
-
-	generator := createTestGZipKinesisRecordGenerator(t, 1024, influxSerializer)
-	generator.Reset([]telegraf.Metric{metric1, metric2})
-
-	record1, err := generator.Next()
-	assert.NoError(err, "Next should not error")
-	assert.NotNil(record1)
-
-	assertEndOfIterator(assert, generator)
-
-	decompressed, decompressErr := gzipDecompress(record1.Entry.Data)
-	assert.NoError(decompressErr, "Should decompress data")
-	assert.Equal(
-		base64.StdEncoding.EncodeToString(concatByteSlices(metric1Data, metric2Data)),
-		base64.StdEncoding.EncodeToString(decompressed),
-		"Decompressed data should equal original metric bytes",
-	)
+	assertGZippedKinesisRecord(assert, record1, [][]byte{
+		metric1Data,
+		{}, // empty block after flush
+	})
 }
 
 func Test_GZipKinesisRecordGenerator_SerializerError_OnlyMetric(t *testing.T) {
@@ -464,7 +467,7 @@ func Test_GZipKinesisRecordGenerator_SerializerError_FirstMetric(t *testing.T) {
 	})
 }
 
-func Test_GZipKinesisRecordGenerator_SerializerError_SecondMetric(t *testing.T) {
+func Test_GZipKinesisRecordGenerator_SerializerError_MiddleMetric(t *testing.T) {
 	assert := assert.New(t)
 
 	metric1, metric1Data := createTestMetric(t, "metric1", influxSerializer)
@@ -566,6 +569,53 @@ func Test_GZipKinesisRecordGenerator_MultipleUsages(t *testing.T) {
 			concatByteSlices(metric3Data, metric4Data),
 		})
 	}
+}
+
+func Test_GZipKinesisRecordGenerator_SingleMetric_ValidGZip(t *testing.T) {
+	assert := assert.New(t)
+
+	metric, metricData := createTestMetric(t, "test", influxSerializer)
+
+	generator := createTestGZipKinesisRecordGenerator(t, 1024, influxSerializer)
+	generator.Reset([]telegraf.Metric{metric})
+
+	record1, err := generator.Next()
+	assert.NoError(err, "Next should not error")
+	assert.NotNil(record1)
+
+	assertEndOfIterator(assert, generator)
+
+	decompressed, decompressErr := gzipDecompress(record1.Entry.Data)
+	assert.NoError(decompressErr, "Should decompress data")
+	assert.Equal(
+		base64.StdEncoding.EncodeToString(metricData),
+		base64.StdEncoding.EncodeToString(decompressed),
+		"Decompressed data should equal original metric bytes",
+	)
+}
+
+func Test_GZipKinesisRecordGenerator_MultipleMetrics_ValidGZip(t *testing.T) {
+	assert := assert.New(t)
+
+	metric1, metric1Data := createTestMetric(t, "metric1", influxSerializer)
+	metric2, metric2Data := createTestMetric(t, "metric2", influxSerializer)
+
+	generator := createTestGZipKinesisRecordGenerator(t, 1024, influxSerializer)
+	generator.Reset([]telegraf.Metric{metric1, metric2})
+
+	record1, err := generator.Next()
+	assert.NoError(err, "Next should not error")
+	assert.NotNil(record1)
+
+	assertEndOfIterator(assert, generator)
+
+	decompressed, decompressErr := gzipDecompress(record1.Entry.Data)
+	assert.NoError(decompressErr, "Should decompress data")
+	assert.Equal(
+		base64.StdEncoding.EncodeToString(concatByteSlices(metric1Data, metric2Data)),
+		base64.StdEncoding.EncodeToString(decompressed),
+		"Decompressed data should equal original metric bytes",
+	)
 }
 
 // ---------------------------------------------------------------------------------
