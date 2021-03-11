@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
+	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/testutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,7 +18,7 @@ func Test_D2lKinesisOutput_PutRecords_SingleRecord_Success(t *testing.T) {
 	svc.SetupGenericResponse(1, 0)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 
@@ -43,7 +44,7 @@ func Test_D2lKinesisOutput_PutRecords_SingleRecord_Failure(t *testing.T) {
 	svc.SetupGenericResponse(0, 1)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 
@@ -71,7 +72,7 @@ func Test_D2lKinesisOutput_PutRecords_SingleRecord_Error(t *testing.T) {
 	svc.SetupErrorResponse(fmt.Errorf("timeout"))
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 
@@ -100,7 +101,7 @@ func Test_D2lKinesisOutput_PutRecords_MultipleRecords_Success(t *testing.T) {
 	svc.SetupGenericResponse(1, 0)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 	record2 := createTestKinesisRecord(1, []byte{0x02})
@@ -142,7 +143,7 @@ func Test_D2lKinesisOutput_PutRecords_MultipleRecords_PartialSuccess(t *testing.
 	})
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 	record2 := createTestKinesisRecord(1, []byte{0x02})
@@ -177,7 +178,7 @@ func Test_D2lKinesisOutput_PutRecords_MultipleRecords_Failure(t *testing.T) {
 	svc.SetupGenericResponse(0, 2)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 	record2 := createTestKinesisRecord(1, []byte{0x02})
@@ -211,7 +212,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_SingleRecord_Success(t *
 	svc.SetupGenericResponse(1, 0)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 
@@ -238,7 +239,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_SingleRecord_Failure(t *
 	svc.SetupGenericResponse(0, 1)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 
@@ -267,7 +268,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_MultipleRecords_Success(
 	svc.SetupGenericResponse(1, 0)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 	record2 := createTestKinesisRecord(1, []byte{0x02})
@@ -310,7 +311,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_MultipleRecords_PartialS
 	})
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 	record2 := createTestKinesisRecord(1, []byte{0x02})
@@ -345,7 +346,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_MultipleRecords_Failure(
 	svc.SetupGenericResponse(0, 2)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	record1 := createTestKinesisRecord(1, []byte{0x01})
 	record2 := createTestKinesisRecord(1, []byte{0x02})
@@ -379,7 +380,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RequestSizeLimit_Suc
 	svc.SetupGenericResponse(2, 0)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	// batch 1
 	record1 := createTestKinesisRecord(100, make([]byte, awsMaxRecordSize))
@@ -455,7 +456,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RequestSizeLimit_Par
 	})
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	// batch 1
 	record1 := createTestKinesisRecord(100, make([]byte, awsMaxRecordSize))
@@ -509,7 +510,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RecordsLimit_Success
 	svc.SetupGenericResponse(1, 0)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	records := createTestKinesisRecords(
 		[]byte{0x01},
@@ -544,7 +545,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RecordsLimit_Partial
 	svc.SetupGenericResponse(0, 1)
 
 	streamName := "stream"
-	output := createTestKinesisOutput(svc, streamName)
+	output := createTestKinesisOutput(svc, streamName, 4)
 
 	records := createTestKinesisRecords(
 		[]byte{0x01},
@@ -572,6 +573,266 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RecordsLimit_Partial
 			),
 		},
 	})
+}
+
+// ---------------------------------------------------------------------------------
+
+func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_Success(t *testing.T) {
+	assert := assert.New(t)
+
+	svc := &mockKinesisPutRecords{}
+	svc.SetupGenericResponse(2, 0)
+
+	streamName := "stream"
+	output := createTestKinesisOutput(svc, streamName, 4)
+
+	record1 := createTestKinesisRecord(1, []byte{0x01})
+	record2 := createTestKinesisRecord(1, []byte{0x02})
+
+	err := output.putRecordBatchesWithRetry(createKinesisRecordSet(
+		record1,
+		record2,
+	))
+	assert.NoError(err, "Should not error")
+
+	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
+		{
+			StreamName: &streamName,
+			Records: []*kinesis.PutRecordsRequestEntry{
+				record1.Entry,
+				record2.Entry,
+			},
+		},
+	})
+}
+
+func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_SingleRetry(t *testing.T) {
+	assert := assert.New(t)
+
+	svc := &mockKinesisPutRecords{}
+	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+		createPutRecordsResultEntry(
+			"shardId-000000000000",
+			"49543463076548007577105092703039560359975228518395012686",
+		),
+		createPutRecordsResultErrorEntry(
+			"InternalFailure",
+			"Internal service failure.",
+		),
+	})
+	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+		createPutRecordsResultEntry(
+			"shardId-000000000001",
+			"49543463076570308322303623326179887152428262250726293522",
+		),
+	})
+
+	streamName := "stream"
+	output := createTestKinesisOutput(svc, streamName, 4)
+
+	record1 := createTestKinesisRecord(1, []byte{0x01})
+	record2 := createTestKinesisRecord(1, []byte{0x02})
+
+	err := output.putRecordBatchesWithRetry(createKinesisRecordSet(
+		record1,
+		record2,
+	))
+	assert.NoError(err, "Should not error")
+
+	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
+		{
+			StreamName: &streamName,
+			Records: []*kinesis.PutRecordsRequestEntry{
+				record1.Entry,
+				record2.Entry,
+			},
+		},
+		{
+			StreamName: &streamName,
+			Records: []*kinesis.PutRecordsRequestEntry{
+				record2.Entry,
+			},
+		},
+	})
+}
+
+func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_MaxRetries(t *testing.T) {
+	assert := assert.New(t)
+
+	svc := &mockKinesisPutRecords{}
+	svc.SetupResponse(2, []*kinesis.PutRecordsResultEntry{
+		createPutRecordsResultErrorEntry(
+			"InternalFailure",
+			"Internal service failure.",
+		),
+		createPutRecordsResultEntry(
+			"shardId-000000000000",
+			"49543463076548007577105092703039560359975228518395012686",
+		),
+		createPutRecordsResultErrorEntry(
+			"InternalFailure",
+			"Internal service failure.",
+		),
+	})
+	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+		createPutRecordsResultEntry(
+			"shardId-000000000001",
+			"49543463076570308322303623326179887152428262250726293522",
+		),
+		createPutRecordsResultErrorEntry(
+			"InternalFailure",
+			"Internal service failure.",
+		),
+	})
+	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+		createPutRecordsResultErrorEntry(
+			"InternalFailure",
+			"Internal service failure.",
+		),
+	})
+
+	streamName := "stream"
+	output := createTestKinesisOutput(svc, streamName, 2)
+
+	record1 := createTestKinesisRecord(1, []byte{0x01})
+	record2 := createTestKinesisRecord(1, []byte{0x02})
+	record3 := createTestKinesisRecord(1, []byte{0x03})
+
+	err := output.putRecordBatchesWithRetry(createKinesisRecordSet(
+		record1,
+		record2,
+		record3,
+	))
+	assert.NoError(err, "Should not error")
+
+	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
+		{
+			StreamName: &streamName,
+			Records: []*kinesis.PutRecordsRequestEntry{
+				record1.Entry,
+				record2.Entry,
+				record3.Entry,
+			},
+		},
+		{
+			StreamName: &streamName,
+			Records: []*kinesis.PutRecordsRequestEntry{
+				record1.Entry,
+				record3.Entry,
+			},
+		},
+		{
+			StreamName: &streamName,
+			Records: []*kinesis.PutRecordsRequestEntry{
+				record3.Entry,
+			},
+		},
+	})
+}
+
+// ---------------------------------------------------------------------------------
+
+func Test_D2lKinesisOutput_Write_NoMetrics(t *testing.T) {
+	assert := assert.New(t)
+
+	output := &d2lKinesisOutput{}
+	err := output.Write(nil)
+	assert.NoError(err, "Should not error")
+}
+
+func Test_D2lKinesisOutput_Write_MultipleMetrics(t *testing.T) {
+	assert := assert.New(t)
+
+	svc := &mockKinesisPutRecords{}
+	svc.SetupGenericResponse(2, 0)
+
+	streamName := "stream"
+	partitionKey := testPartitionKey
+
+	output := createTestKinesisOutput(svc, streamName, 4)
+	output.recordGenerator, _ = createGZipKinesisRecordGenerator(
+		testutil.Logger{},
+		awsMaxRecordSize,
+		testPartitionKeyProvider,
+		influxSerializer,
+	)
+
+	metric1, metric1Data := createTestMetric(t, "metric1", influxSerializer)
+	metric2, metric2Data := createTestMetric(t, "metric2", influxSerializer)
+
+	err := output.Write([]telegraf.Metric{
+		metric1,
+		metric2,
+	})
+	assert.NoError(err, "Should not error")
+
+	data, dataErr := gzipCompressBlocks([][]byte{
+		concatByteSlices(metric1Data, metric2Data),
+	})
+	assert.NoError(dataErr, "Should compress data")
+
+	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
+		{
+			StreamName: &streamName,
+			Records: []*kinesis.PutRecordsRequestEntry{
+				{
+					PartitionKey: &partitionKey,
+					Data:         data,
+				},
+			},
+		},
+	})
+}
+
+// ---------------------------------------------------------------------------------
+
+func Test_D2lKinesisOutput_Connect_MaxRecordRetriesLessThanZero(t *testing.T) {
+	assert := assert.New(t)
+
+	output := d2lKinesisOutput{
+		MaxRecordRetries: -1,
+		MaxRecordSize:    awsMaxRecordSize,
+		StreamName:       "metrics",
+	}
+
+	err := output.Connect()
+	assert.Equal(err.Error(), "max_record_retries must be greater than or equal to 0")
+}
+
+func Test_D2lKinesisOutput_Connect_MaxRecordSizeLessThan1000Bytes(t *testing.T) {
+	assert := assert.New(t)
+
+	output := d2lKinesisOutput{
+		MaxRecordSize: 999,
+		StreamName:    "metrics",
+	}
+
+	err := output.Connect()
+	assert.Equal(err.Error(), "max_record_size must be at least 1000 bytes")
+}
+
+func Test_D2lKinesisOutput_Connect_MaxRecordSizeGreaterThan1MiB(t *testing.T) {
+	assert := assert.New(t)
+
+	output := d2lKinesisOutput{
+		MaxRecordSize: awsMaxRecordSize + 1,
+		StreamName:    "metrics",
+	}
+
+	err := output.Connect()
+	assert.Equal(err.Error(), "max_record_size must be less than or equal to the aws limit of 1048576 bytes")
+}
+
+func Test_D2lKinesisOutput_Connect_EmptyStreamName(t *testing.T) {
+	assert := assert.New(t)
+
+	output := d2lKinesisOutput{
+		MaxRecordSize: awsMaxRecordSize,
+		StreamName:    "",
+	}
+
+	err := output.Connect()
+	assert.Equal(err.Error(), "stream_name is required")
 }
 
 // ---------------------------------------------------------------------------------
@@ -625,12 +886,14 @@ func createPutRecordsResultErrorEntry(
 func createTestKinesisOutput(
 	svc *mockKinesisPutRecords,
 	streamName string,
+	maxRecordRetries int,
 ) d2lKinesisOutput {
 
 	return d2lKinesisOutput{
-		Log:        testutil.Logger{},
-		StreamName: streamName,
-		svc:        svc,
+		Log:              testutil.Logger{},
+		StreamName:       streamName,
+		svc:              svc,
+		MaxRecordRetries: maxRecordRetries,
 	}
 }
 

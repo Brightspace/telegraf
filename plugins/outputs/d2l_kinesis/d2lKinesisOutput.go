@@ -100,20 +100,20 @@ func (k *d2lKinesisOutput) Description() string {
 // Connect to the Output; connect is only called once when the plugin starts
 func (k *d2lKinesisOutput) Connect() error {
 
-	if k.StreamName == "" {
-		return fmt.Errorf("stream_name is required")
-	}
-
 	if k.MaxRecordRetries < 0 {
 		return fmt.Errorf("max_record_retries must be greater than or equal to 0")
 	}
 
 	if k.MaxRecordSize < 1000 {
-		return fmt.Errorf("max_record_size must be greater than 1000 bytes")
+		return fmt.Errorf("max_record_size must be at least 1000 bytes")
 	}
 
 	if k.MaxRecordSize > awsMaxRecordSize {
 		return fmt.Errorf("max_record_size must be less than or equal to the aws limit of %d bytes", awsMaxRecordSize)
+	}
+
+	if k.StreamName == "" {
+		return fmt.Errorf("stream_name is required")
 	}
 
 	generator, generatorErr := createGZipKinesisRecordGenerator(
