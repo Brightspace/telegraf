@@ -2,6 +2,7 @@ package d2lkinesis
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -224,10 +225,12 @@ func (k *d2lKinesisOutput) putRecordBatches(
 	for {
 		record, recordErr := recordIterator.Next()
 		if recordErr != nil {
+
+			if recordErr == io.EOF {
+				break
+			}
+
 			return nil, recordErr
-		}
-		if record == nil {
-			break
 		}
 
 		recordRequestSize := record.RequestSize

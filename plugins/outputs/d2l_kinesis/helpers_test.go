@@ -1,6 +1,8 @@
 package d2lkinesis
 
 import (
+	"io"
+
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +37,7 @@ func assertEndOfIterator(
 	for i := 0; i < 2; i++ {
 
 		record, err := iterator.Next()
-		assert.NoError(err, "Next should not error")
+		assert.Equal(io.EOF, err, "Next should return EOF error")
 		assert.Nil(record, "Next should not have returned another record")
 	}
 }

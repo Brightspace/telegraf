@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
+	"io"
 
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/influxdata/telegraf"
@@ -95,7 +96,7 @@ func (g *gzipKinesisRecordGenerator) Next() (*kinesisRecord, error) {
 
 	startIndex := g.index
 	if startIndex >= g.metricsCount {
-		return nil, nil
+		return nil, io.EOF
 	}
 
 	index := startIndex
@@ -162,7 +163,7 @@ func (g *gzipKinesisRecordGenerator) Next() (*kinesisRecord, error) {
 		return g.yieldRecord(recordMetricCount)
 	}
 
-	return nil, nil
+	return nil, io.EOF
 }
 
 func createGZipSizeEstimator() gZipSizeEstimator {
