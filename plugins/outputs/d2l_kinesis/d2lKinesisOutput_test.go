@@ -512,10 +512,11 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RecordsLimit_Success
 	streamName := "stream"
 	output := createTestKinesisOutput(svc, streamName, 4)
 
-	records := createTestKinesisRecords(
-		[]byte{0x01},
-		awsMaxRecordsPerRequest+1,
-	)
+	recordsCount := awsMaxRecordsPerRequest + 1
+	records := make([]*kinesisRecord, recordsCount)
+	for i := 0; i < recordsCount; i++ {
+		records[i] = createTestKinesisRecord(1, []byte{0x01})
+	}
 
 	failedRecords, err := output.putRecordBatches(createKinesisRecordSet(records...))
 	assert.NoError(err, "Should not error")
@@ -547,10 +548,11 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RecordsLimit_Partial
 	streamName := "stream"
 	output := createTestKinesisOutput(svc, streamName, 4)
 
-	records := createTestKinesisRecords(
-		[]byte{0x01},
-		awsMaxRecordsPerRequest+1,
-	)
+	recordsCount := awsMaxRecordsPerRequest + 1
+	records := make([]*kinesisRecord, recordsCount)
+	for i := 0; i < recordsCount; i++ {
+		records[i] = createTestKinesisRecord(1, []byte{0x01})
+	}
 
 	failedRecords, err := output.putRecordBatches(createKinesisRecordSet(records...))
 	assert.NoError(err, "Should not error")

@@ -246,6 +246,7 @@ func (k *d2lKinesisOutput) putRecordBatches(
 		batch = append(batch, record)
 
 		if batchRecordCount >= awsMaxRecordsPerRequest {
+
 			failedRecords := k.putRecords(batch)
 			allFailedRecords = append(allFailedRecords, failedRecords...)
 
@@ -256,6 +257,7 @@ func (k *d2lKinesisOutput) putRecordBatches(
 	}
 
 	if batchRecordCount > 0 {
+
 		failedRecords := k.putRecords(batch)
 		allFailedRecords = append(allFailedRecords, failedRecords...)
 	}
