@@ -1,5 +1,7 @@
 package d2lkinesis
 
+import "io"
+
 func createKinesisRecordSet(
 	records ...*kinesisRecord,
 ) kinesisRecordIterator {
@@ -23,7 +25,7 @@ func (s *kinesisRecordSet) Next() (*kinesisRecord, error) {
 
 	index := s.index
 	if index >= s.count {
-		return nil, nil
+		return nil, io.EOF
 	}
 
 	s.index++
