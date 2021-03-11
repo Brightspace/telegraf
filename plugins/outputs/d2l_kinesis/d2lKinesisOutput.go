@@ -13,7 +13,7 @@ import (
 	"github.com/influxdata/telegraf/plugins/serializers"
 )
 
-const defaultMaxRecordRetries = 4
+const defaultMaxRecordRetries uint8 = 4
 
 // Limits set by AWS (https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html)
 const awsMaxRecordsPerRequest = 500
@@ -34,7 +34,7 @@ type (
 		EndpointURL string `toml:"endpoint_url"`
 
 		// Stream configs
-		MaxRecordRetries int    `toml:"max_record_retries"`
+		MaxRecordRetries uint8  `toml:"max_record_retries"`
 		MaxRecordSize    int    `toml:"max_record_size"`
 		StreamName       string `toml:"stream_name"`
 
@@ -99,10 +99,6 @@ func (k *d2lKinesisOutput) Description() string {
 
 // Connect to the Output; connect is only called once when the plugin starts
 func (k *d2lKinesisOutput) Connect() error {
-
-	if k.MaxRecordRetries < 0 {
-		return fmt.Errorf("max_record_retries must be greater than or equal to 0")
-	}
 
 	if k.MaxRecordSize < 1000 {
 		return fmt.Errorf("max_record_size must be at least 1000 bytes")
@@ -176,7 +172,7 @@ func (k *d2lKinesisOutput) putRecordBatchesWithRetry(
 	recordIterator kinesisRecordIterator,
 ) error {
 
-	attempt := 0
+	attempt := uint8(0)
 	for {
 
 		failedRecords, err := k.putRecordBatches(recordIterator)

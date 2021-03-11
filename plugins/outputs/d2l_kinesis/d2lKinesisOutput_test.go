@@ -786,19 +786,6 @@ func Test_D2lKinesisOutput_Write_MultipleMetrics(t *testing.T) {
 
 // ---------------------------------------------------------------------------------
 
-func Test_D2lKinesisOutput_Connect_MaxRecordRetriesLessThanZero(t *testing.T) {
-	assert := assert.New(t)
-
-	output := d2lKinesisOutput{
-		MaxRecordRetries: -1,
-		MaxRecordSize:    awsMaxRecordSize,
-		StreamName:       "metrics",
-	}
-
-	err := output.Connect()
-	assert.Equal(err.Error(), "max_record_retries must be greater than or equal to 0")
-}
-
 func Test_D2lKinesisOutput_Connect_MaxRecordSizeLessThan1000Bytes(t *testing.T) {
 	assert := assert.New(t)
 
@@ -886,7 +873,7 @@ func createPutRecordsResultErrorEntry(
 func createTestKinesisOutput(
 	svc *mockKinesisPutRecords,
 	streamName string,
-	maxRecordRetries int,
+	maxRecordRetries uint8,
 ) d2lKinesisOutput {
 
 	return d2lKinesisOutput{
