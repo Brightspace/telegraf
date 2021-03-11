@@ -22,7 +22,7 @@ func createGZipKinesisRecordGenerator(
 	serializer serializers.Serializer,
 ) (kinesisRecordGenerator, error) {
 
-	buffer := bytes.NewBuffer([]byte{})
+	buffer := bytes.NewBuffer(make([]byte, 0, maxRecordSize))
 
 	writer, writerErr := gzip.NewWriterLevel(buffer, flate.BestCompression)
 	if writerErr != nil {
