@@ -10,7 +10,7 @@ func Test_kinesisRecordSet_Empty(t *testing.T) {
 	assert := assert.New(t)
 
 	var iterator kinesisRecordIterator
-	iterator = createKinesisRecordSet([]*kinesisRecord{})
+	iterator = createKinesisRecordSet()
 
 	assertEndOfIterator(assert, iterator)
 }
@@ -21,9 +21,9 @@ func Test_kinesisRecordSet_SingleRecord(t *testing.T) {
 	record1 := createTestKinesisRecord(1, []byte{0xa1})
 
 	var iterator kinesisRecordIterator
-	iterator = createKinesisRecordSet([]*kinesisRecord{
+	iterator = createKinesisRecordSet(
 		record1,
-	})
+	)
 
 	record, err := iterator.Next()
 	assert.NoError(err, "Next should not error")
@@ -40,11 +40,11 @@ func Test_kinesisRecordSet_MultipleRecords(t *testing.T) {
 	record3 := createTestKinesisRecord(3, []byte{0xc3})
 
 	var iterator kinesisRecordIterator
-	iterator = createKinesisRecordSet([]*kinesisRecord{
+	iterator = createKinesisRecordSet(
 		record1,
 		record2,
 		record3,
-	})
+	)
 
 	record, err := iterator.Next()
 	assert.NoError(err, "Next should not error")
