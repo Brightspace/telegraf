@@ -46,7 +46,7 @@ type (
 	}
 )
 
-var sampleConfig = `
+const sampleConfig = `
   ## Amazon REGION of kinesis endpoint.
   region = "ap-southeast-2"
 
