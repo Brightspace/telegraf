@@ -1,7 +1,7 @@
 package d2lkinesis
 
 func createKinesisRecordSet(
-	records []*kinesisRecord,
+	records ...*kinesisRecord,
 ) kinesisRecordIterator {
 
 	return &kinesisRecordSet{

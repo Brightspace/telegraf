@@ -13,7 +13,7 @@ import (
 	"github.com/influxdata/telegraf/plugins/serializers"
 )
 
-const defaultMaxRecordRetries = 10
+const defaultMaxRecordRetries = 4
 
 // Limits set by AWS (https://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecords.html)
 const awsMaxRecordsPerRequest = 500
@@ -39,12 +39,10 @@ type (
 		StreamName       string `toml:"stream_name"`
 
 		// Internals
-		Log                  telegraf.Logger `toml:"-"`
-		maxRecordsPerRequest int
-		maxRequestSize       int
-		recordGenerator      kinesisRecordGenerator
-		serializer           serializers.Serializer
-		svc                  kinesisiface.KinesisAPI
+		Log             telegraf.Logger `toml:"-"`
+		recordGenerator kinesisRecordGenerator
+		serializer      serializers.Serializer
+		svc             kinesisiface.KinesisAPI
 	}
 )
 
@@ -74,7 +72,7 @@ var sampleConfig = `
   # endpoint_url = ""
 
   ## The maximum number of times to retry putting an individual Kinesis record
-  # max_record_retries = 10
+  # max_record_retries = 4
 
   ## The maximum Kinesis record size to put
   # max_record_size = 1048576
@@ -213,7 +211,7 @@ func (k *d2lKinesisOutput) putRecordBatchesWithRetry(
 			"Retrying %d record(s)",
 			failedCount,
 		)
-		recordIterator = createKinesisRecordSet(failedRecords)
+		recordIterator = createKinesisRecordSet(failedRecords...)
 	}
 }
 
@@ -223,9 +221,9 @@ func (k *d2lKinesisOutput) putRecordBatches(
 
 	batchRecordCount := 0
 	batchRequestSize := 0
-	batch := []*kinesisRecord{}
+	var batch []*kinesisRecord
 
-	allFailedRecords := []*kinesisRecord{}
+	var allFailedRecords []*kinesisRecord
 
 	for {
 		record, recordErr := recordIterator.Next()
@@ -237,7 +235,7 @@ func (k *d2lKinesisOutput) putRecordBatches(
 		}
 
 		recordRequestSize := record.RequestSize
-		if batchRequestSize+recordRequestSize > k.maxRequestSize {
+		if batchRequestSize+recordRequestSize > awsMaxRequestSize {
 
 			failedRecords := k.putRecords(batch)
 			allFailedRecords = append(allFailedRecords, failedRecords...)
@@ -251,7 +249,7 @@ func (k *d2lKinesisOutput) putRecordBatches(
 		batchRequestSize += recordRequestSize
 		batch = append(batch, record)
 
-		if batchRecordCount >= k.maxRecordsPerRequest {
+		if batchRecordCount >= awsMaxRecordsPerRequest {
 			failedRecords := k.putRecords(batch)
 			allFailedRecords = append(allFailedRecords, failedRecords...)
 
@@ -269,6 +267,7 @@ func (k *d2lKinesisOutput) putRecordBatches(
 	return allFailedRecords, nil
 }
 
+// putRecords writes the set of records to Kinesis and returns the ones which failed
 func (k *d2lKinesisOutput) putRecords(
 	records []*kinesisRecord,
 ) []*kinesisRecord {
@@ -311,10 +310,13 @@ func (k *d2lKinesisOutput) putRecords(
 
 	var failedRecords []*kinesisRecord
 
-	if *resp.FailedRecordCount > 0 {
+	failedRecordCount := *resp.FailedRecordCount
+	if failedRecordCount > 0 {
 
-		for i := 0; i < totalRecordCount; i++ {
-			if resp.Records[i].ErrorCode != nil {
+		failedRecords = make([]*kinesisRecord, 0, failedRecordCount)
+
+		for i, result := range resp.Records {
+			if result.ErrorCode != nil {
 				failedRecords = append(failedRecords, records[i])
 			}
 		}
@@ -329,9 +331,6 @@ func init() {
 
 			MaxRecordRetries: defaultMaxRecordRetries,
 			MaxRecordSize:    awsMaxRecordSize,
-
-			maxRecordsPerRequest: awsMaxRecordsPerRequest,
-			maxRequestSize:       awsMaxRequestSize,
 		}
 	})
 }

@@ -27,6 +27,28 @@ func createTestKinesisRecord(
 	return createKinesisRecord(entry, metrics)
 }
 
+func createTestKinesisRecords(
+	data []byte,
+	count int,
+) []*kinesisRecord {
+
+	partitionKey := testPartitionKey
+	records := make([]*kinesisRecord, count, count)
+
+	for i := 0; i < count; i++ {
+
+		entry := &kinesis.PutRecordsRequestEntry{
+			Data:            data,
+			ExplicitHashKey: nil,
+			PartitionKey:    &partitionKey,
+		}
+
+		records[i] = createKinesisRecord(entry, 1)
+	}
+
+	return records
+}
+
 func assertEndOfIterator(
 	assert *assert.Assertions,
 	iterator kinesisRecordIterator,
