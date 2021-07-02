@@ -46,12 +46,12 @@ require (
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.3 // indirect
 	github.com/docker/libnetwork v0.8.0-dev.2.0.20181012153825-d7b61745d166
-	github.com/eclipse/paho.mqtt.golang v1.2.0
+	github.com/eclipse/paho.mqtt.golang v1.3.0
 	github.com/ericchiang/k8s v1.2.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logfmt/logfmt v0.4.0
 	github.com/go-ole/go-ole v1.2.1 // indirect
-	github.com/go-ping/ping v0.0.0-20201115131931-3300c582a663
+	github.com/go-ping/ping v0.0.0-20210201095549-52eed920f98c
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/goburrow/modbus v0.1.0
@@ -64,7 +64,7 @@ require (
 	github.com/golang/snappy v0.0.1
 	github.com/google/go-cmp v0.5.2
 	github.com/google/go-github/v32 v32.1.0
-	github.com/gopcua/opcua v0.1.12
+	github.com/gopcua/opcua v0.1.13
 	github.com/gorilla/mux v1.6.2
 	github.com/gosnmp/gosnmp v1.29.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
