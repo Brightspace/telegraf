@@ -294,6 +294,7 @@ jobs:
 workflows:
   version: 2
   check:
+    when: false
     jobs:
       - 'deps':
           filters:
@@ -418,6 +419,7 @@ workflows:
                 only: /.*/
 
   nightly:
+    when: false
     jobs:
       - 'deps'
       - 'test-go-1_15':
@@ -449,3 +451,31 @@ workflows:
             branches:
               only:
                 - master
+
+  d2l:
+    jobs:
+      # Linux
+      - 'deps':
+          filters:
+            tags:
+              only: /.*/
+      - 'test-go-1_16':
+          requires:
+            - 'deps'
+          filters:
+            tags:
+              only: /.*/
+      - 'amd64-package':
+          requires: 
+            - 'test-go-1_16'
+      - 'arm64-package':
+          requires: 
+            - 'test-go-1_16'
+      # Windows
+      - 'test-go-windows':
+          filters:
+            tags:
+              only: /.*/
+      - 'windows-package':
+          requires: 
+            - 'test-go-windows'
