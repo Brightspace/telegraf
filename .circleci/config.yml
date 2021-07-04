@@ -291,14 +291,18 @@ jobs:
             printf -v payload '{ "pullRequestNumber": "%s" }' "$PR"
             curl -X POST "https://182c7jdgog.execute-api.us-east-1.amazonaws.com/prod/shareArtifacts" --data "$payload"   
                       
-
   d2l-publish-packages:
     executor: aws-cli/default
     steps:
       - attach_workspace:
           at: '/build'
       - run:
-          command: ls /build/dist
+          command: |
+            sha=`echo $CIRCLE_SHA1 | head -c 8`
+            version=`cat build_version.txt | sed 's/ *$//g'`
+            aws s3 cp --acl public-read --profile d2l_publisher dist/* "s3://d2l-telegraf/$version~$sha/"
+          environment:
+            AWS_CONFIG_FILE: ./.aws/config
 
 workflows:
   version: 2
