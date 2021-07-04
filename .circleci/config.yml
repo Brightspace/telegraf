@@ -505,3 +505,7 @@ workflows:
             - 'amd64-package'
             - 'arm64-package'
             - 'windows-package'
+          filters:
+            branches:
+              only:
+                - master
