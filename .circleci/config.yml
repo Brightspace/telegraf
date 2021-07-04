@@ -294,6 +294,7 @@ jobs:
   d2l-publish-packages:
     executor: aws-cli/default
     steps:
+      - checkout
       - attach_workspace:
           at: '.'
       - run:
