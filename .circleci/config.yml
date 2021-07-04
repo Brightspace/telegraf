@@ -291,6 +291,15 @@ jobs:
             printf -v payload '{ "pullRequestNumber": "%s" }' "$PR"
             curl -X POST "https://182c7jdgog.execute-api.us-east-1.amazonaws.com/prod/shareArtifacts" --data "$payload"   
                       
+
+  d2l-publish-packages:
+    executor: aws-cli/default
+    steps:
+      - attach_workspace:
+          at: '/build'
+      - run:
+          command: ls /build/dist
+
 workflows:
   version: 2
   check:
@@ -479,3 +488,8 @@ workflows:
       - 'windows-package':
           requires: 
             - 'test-go-windows'
+      - 'd2l-publish-packages':
+          requires: 
+            - 'amd64-package'
+            - 'arm64-package'
+            - 'windows-package'
