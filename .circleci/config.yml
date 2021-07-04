@@ -296,9 +296,9 @@ jobs:
     executor: aws-cli/default
     steps:
       - attach_workspace:
-          at: '/build'
+          at: '.'
       - run:
-          command: ls /build/dist
+          command: ls -alR
 
 workflows:
   version: 2
