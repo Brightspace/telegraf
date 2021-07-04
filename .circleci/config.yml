@@ -295,7 +295,7 @@ jobs:
     executor: aws-cli/default
     steps:
       - attach_workspace:
-          at: '/build'
+          at: '.'
       - run:
           command: |
             sha=`echo $CIRCLE_SHA1 | head -c 8`
