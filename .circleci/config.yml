@@ -304,7 +304,7 @@ jobs:
           command: |
             sha=`echo $CIRCLE_SHA1 | head -c 8`
             version=`cat build_version.txt | sed 's/ *$//g'`
-            aws s3 cp --acl public-read --profile d2l_publisher dist/* "s3://d2l-telegraf/$version~$sha/"
+            aws s3 cp --acl public-read --profile d2l_publisher --recursive dist/ "s3://d2l-telegraf/$version~$sha/"
 
 workflows:
   version: 2
