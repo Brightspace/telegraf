@@ -476,16 +476,10 @@ workflows:
   d2l:
     jobs:
       # Linux
-      - 'deps':
-          filters:
-            tags:
-              only: /.*/
+      - 'deps'
       - 'test-go-1_16':
           requires:
             - 'deps'
-          filters:
-            tags:
-              only: /.*/
       - 'amd64-package':
           requires: 
             - 'test-go-1_16'
@@ -493,10 +487,7 @@ workflows:
           requires: 
             - 'test-go-1_16'
       # Windows
-      - 'test-go-windows':
-          filters:
-            tags:
-              only: /.*/
+      - 'test-go-windows'
       - 'windows-package':
           requires: 
             - 'test-go-windows'
