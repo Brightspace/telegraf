@@ -4,16 +4,17 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/matttproud/golang_protobuf_extensions/pbutil"
 	"io"
 	"math"
 	"mime"
 	"net/http"
 	"time"
 
+	"github.com/matttproud/golang_protobuf_extensions/pbutil"
+
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/metric"
-	. "github.com/influxdata/telegraf/plugins/parsers/prometheus/common"
+	"github.com/influxdata/telegraf/plugins/parsers/prometheus/common"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -63,7 +64,7 @@ func (p *Parser) Parse(buf []byte) ([]telegraf.Metric, error) {
 	for metricName, mf := range metricFamilies {
 		for _, m := range mf.Metric {
 			// reading tags
-			tags := MakeLabels(m, p.DefaultTags)
+			tags := common.MakeLabels(m, p.DefaultTags)
 
 			if mf.GetType() == dto.MetricType_SUMMARY {
 				// summary metric
@@ -76,15 +77,12 @@ func (p *Parser) Parse(buf []byte) ([]telegraf.Metric, error) {
 			} else {
 				// standard metric
 				// reading fields
-				fields := make(map[string]interface{})
-				fields = getNameAndValue(m, metricName)
+				fields := getNameAndValue(m, metricName)
 				// converting to telegraf metric
 				if len(fields) > 0 {
 					t := getTimestamp(m, now)
-					metric, err := metric.New("prometheus", tags, fields, t, ValueType(mf.GetType()))
-					if err == nil {
-						metrics = append(metrics, metric)
-					}
+					m := metric.New("prometheus", tags, fields, t, common.ValueType(mf.GetType()))
+					metrics = append(metrics, m)
 				}
 			}
 		}
@@ -100,11 +98,11 @@ func (p *Parser) ParseLine(line string) (telegraf.Metric, error) {
 	}
 
 	if len(metrics) < 1 {
-		return nil, fmt.Errorf("No metrics in line")
+		return nil, fmt.Errorf("no metrics in line")
 	}
 
 	if len(metrics) > 1 {
-		return nil, fmt.Errorf("More than one metric in line")
+		return nil, fmt.Errorf("more than one metric in line")
 	}
 
 	return metrics[0], nil
@@ -122,10 +120,8 @@ func makeQuantiles(m *dto.Metric, tags map[string]string, metricName string, met
 
 	fields[metricName+"_count"] = float64(m.GetSummary().GetSampleCount())
 	fields[metricName+"_sum"] = float64(m.GetSummary().GetSampleSum())
-	met, err := metric.New("prometheus", tags, fields, t, ValueType(metricType))
-	if err == nil {
-		metrics = append(metrics, met)
-	}
+	met := metric.New("prometheus", tags, fields, t, common.ValueType(metricType))
+	metrics = append(metrics, met)
 
 	for _, q := range m.GetSummary().Quantile {
 		newTags := tags
@@ -134,10 +130,8 @@ func makeQuantiles(m *dto.Metric, tags map[string]string, metricName string, met
 		newTags["quantile"] = fmt.Sprint(q.GetQuantile())
 		fields[metricName] = float64(q.GetValue())
 
-		quantileMetric, err := metric.New("prometheus", newTags, fields, t, ValueType(metricType))
-		if err == nil {
-			metrics = append(metrics, quantileMetric)
-		}
+		quantileMetric := metric.New("prometheus", newTags, fields, t, common.ValueType(metricType))
+		metrics = append(metrics, quantileMetric)
 	}
 	return metrics
 }
@@ -151,10 +145,8 @@ func makeBuckets(m *dto.Metric, tags map[string]string, metricName string, metri
 	fields[metricName+"_count"] = float64(m.GetHistogram().GetSampleCount())
 	fields[metricName+"_sum"] = float64(m.GetHistogram().GetSampleSum())
 
-	met, err := metric.New("prometheus", tags, fields, t, ValueType(metricType))
-	if err == nil {
-		metrics = append(metrics, met)
-	}
+	met := metric.New("prometheus", tags, fields, t, common.ValueType(metricType))
+	metrics = append(metrics, met)
 
 	for _, b := range m.GetHistogram().Bucket {
 		newTags := tags
@@ -162,10 +154,8 @@ func makeBuckets(m *dto.Metric, tags map[string]string, metricName string, metri
 		newTags["le"] = fmt.Sprint(b.GetUpperBound())
 		fields[metricName+"_bucket"] = float64(b.GetCumulativeCount())
 
-		histogramMetric, err := metric.New("prometheus", newTags, fields, t, ValueType(metricType))
-		if err == nil {
-			metrics = append(metrics, histogramMetric)
-		}
+		histogramMetric := metric.New("prometheus", newTags, fields, t, common.ValueType(metricType))
+		metrics = append(metrics, histogramMetric)
 	}
 	return metrics
 }
