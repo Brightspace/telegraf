@@ -304,6 +304,7 @@ jobs:
             version=`cat build_version.txt | sed 's/ *$//g'`
             aws configure set credential_source Environment
             aws configure set role_arn arn:aws:iam::573744120172:role/d2l-telegraf-publisher
+            aws sts get-caller-identity
             aws s3 cp --acl public-read --recursive dist/ "s3://d2l-telegraf/$version~$sha/"
           environment:
               AWS_PROFILE: d2l_publisher
