@@ -246,13 +246,12 @@ func Test_GZipKinesisRecordGenerator_AtMaxWithFlush_FirstRecord(t *testing.T) {
 func Test_GZipKinesisRecordGenerator_AtMaxWithFlush_MiddleRecord(t *testing.T) {
 	assert := assert.New(t)
 
-	metric1, metric1Err := metric.New(
+	metric1 := metric.New(
 		"m",
 		nil,
 		map[string]interface{}{"v": 0},
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 	)
-	assert.NoError(metric1Err, "Should create metric 1")
 
 	metric1Data, metric1DataErr := influxSerializer.Serialize(metric1)
 	assert.NoError(metric1DataErr, "Should serialize metric 1")
