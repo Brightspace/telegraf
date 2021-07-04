@@ -1,7 +1,7 @@
 version: 2.1
 orbs:
   win: circleci/windows@2.4.0  
-  aws-cli: circleci/aws-cli@1.4.0
+  aws-cli: circleci/aws-cli@2.0.3
 
 executors:
   go-1_15:
@@ -297,13 +297,14 @@ jobs:
       - checkout
       - attach_workspace:
           at: '.'
+      - aws-cli/setup:
+          profile-name: d2l_publisher
+          role-arn: arn:aws:iam::573744120172:role/d2l-telegraf-publisher
       - run:
           command: |
             sha=`echo $CIRCLE_SHA1 | head -c 8`
             version=`cat build_version.txt | sed 's/ *$//g'`
             aws s3 cp --acl public-read --profile d2l_publisher dist/* "s3://d2l-telegraf/$version~$sha/"
-          environment:
-            AWS_CONFIG_FILE: ./.aws/config
 
 workflows:
   version: 2
