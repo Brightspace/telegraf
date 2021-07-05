@@ -475,33 +475,32 @@ workflows:
 
   d2l:
     jobs:
+
       # Linux
-      - 'deps':
-          filters:
-            tags:
-              only: /.*/
+      - 'deps'
       - 'test-go-1_16':
           requires:
             - 'deps'
-          filters:
-            tags:
-              only: /.*/
       - 'amd64-package':
           requires: 
             - 'test-go-1_16'
       - 'arm64-package':
           requires: 
             - 'test-go-1_16'
+
       # Windows
-      - 'test-go-windows':
-          filters:
-            tags:
-              only: /.*/
+      - 'test-go-windows'
       - 'windows-package':
           requires: 
             - 'test-go-windows'
+
+      # Publish
       - 'd2l-publish-packages':
           requires: 
             - 'amd64-package'
             - 'arm64-package'
             - 'windows-package'
+          filters:
+            branches:
+              only:
+                - master
