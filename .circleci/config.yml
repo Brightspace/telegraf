@@ -487,6 +487,9 @@ workflows:
       - 'arm64-package':
           requires: 
             - 'test-go-1_16'
+      - 'static-package':
+          requires: 
+            - 'test-go-1_16'
 
       # Windows
       - 'test-go-windows'
@@ -499,6 +502,7 @@ workflows:
           requires: 
             - 'amd64-package'
             - 'arm64-package'
+            - 'static-package'
             - 'windows-package'
           filters:
             branches:
