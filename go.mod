@@ -25,6 +25,7 @@ require (
 	github.com/antchfx/xpath v1.2.0
 	github.com/apache/thrift v0.15.0
 	github.com/aristanetworks/goarista v0.0.0-20190325233358-a123909ec740
+	github.com/aws/aws-sdk-go v1.38.3
 	github.com/aws/aws-sdk-go-v2 v1.12.0
 	github.com/aws/aws-sdk-go-v2/config v1.8.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.4.3
