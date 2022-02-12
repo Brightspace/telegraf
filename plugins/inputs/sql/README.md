@@ -5,7 +5,6 @@ types are supported and their settings might differ (especially the connection p
 Please check the list of [supported SQL drivers](../../../docs/SQL_DRIVERS_INPUT.md) for the
 `driver` name and options for the data-source-name (`dsn`) options.
 
-### Configuration
 ## Configuration
 
 This section contains the default TOML to configure the plugin.  You can
@@ -74,13 +73,6 @@ generate it using `telegraf --usage <plugin-name>`.
 
     ## Column names containing fields (explicit types)
     ## Convert the given columns to the corresponding type. Explicit type conversions take precedence over
-		## the automatic (driver-based) conversion below.
-		## NOTE: Columns should not be specified for multiple types or the resulting type is undefined.
-    # field_columns_float = []
-    # field_columns_int = []
-		# field_columns_uint = []
-		# field_columns_bool = []
-		# field_columns_string = []
     ## the automatic (driver-based) conversion below.
     ## NOTE: Columns should not be specified for multiple types or the resulting type is undefined.
     # field_columns_float = []
@@ -97,16 +89,6 @@ generate it using `telegraf --usage <plugin-name>`.
     # field_columns_exclude = []
 ```
 
-### Options
-#### Driver
-The `driver` and `dsn` options specify how to connect to the database. As especially the `dsn` format and
-values vary with the `driver` refer to the list of [supported SQL drivers](../../../docs/SQL_DRIVERS_INPUT.md) for possible values and more details.
-
-#### Connection limits
-With these options you can limit the number of connections kept open by this plugin. Details about the exact
-workings can be found in the [golang sql documentation](https://golang.org/pkg/database/sql/#DB.SetConnMaxIdleTime).
-
-#### Query sections
 ## Options
 
 ### Driver
@@ -129,14 +111,6 @@ the filter. In case any the columns specified in `measurement_col` or `time_col`
 the plugin falls-back to the documented defaults. Fields or tags specified in the includes of the options but missing
 in the returned query are silently ignored.
 
-### Types
-This plugin relies on the driver to do the type conversion. For the different properties of the metric the following
-types are accepted.
-
-#### Measurement
-Only columns of type `string`  are accepted.
-
-#### Time
 ## Types
 
 This plugin relies on the driver to do the type conversion. For the different properties of the metric the following
@@ -153,11 +127,6 @@ to any of `unix`, `unix_ms`, `unix_ns` or `unix_us` accordingly. By default the 
 expected. For string columns, please specify the `time_format` accordingly.
 See the [golang time documentation](https://golang.org/pkg/time/#Time.Format) for details.
 
-#### Tags
-For tags columns with textual values (`string` and `bytes`), signed and unsigned integers (8, 16, 32 and 64 bit),
-floating-point (32 and 64 bit), `boolean` and `time` values are accepted. Those values will be converted to string.
-
-#### Fields
 ### Tags
 
 For tags columns with textual values (`string` and `bytes`), signed and unsigned integers (8, 16, 32 and 64 bit),
@@ -169,9 +138,6 @@ For fields columns with textual values (`string` and `bytes`), signed and unsign
 floating-point (32 and 64 bit), `boolean` and `time` values are accepted. Here `bytes` will be converted to `string`,
 signed and unsigned integer values will be converted to `int64` or `uint64` respectively. Floating-point values are converted to `float64` and `time` is converted to a nanosecond timestamp of type `int64`.
 
-### Example Output
-Using the [MariaDB sample database](https://www.mariadbtutorial.com/getting-started/mariadb-sample-database) and the
-configuration
 ## Example Output
 
 Using the [MariaDB sample database](https://www.mariadbtutorial.com/getting-started/mariadb-sample-database) and the
@@ -185,12 +151,6 @@ configuration
   [[inputs.sql.query]]
     query="SELECT * FROM guests"
     measurement = "nation"
-    tag_cols_include = ["name"]
-    field_cols_exclude = ["name"]
-```
-
-Telegraf will output the following metrics
-```
     tag_columns_include = ["name"]
     field_columns_exclude = ["name"]
 ```
