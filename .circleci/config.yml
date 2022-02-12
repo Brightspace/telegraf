@@ -729,9 +729,7 @@ workflows:
     jobs:
 
       # Linux
-      - 'test-go-linux':
-          requires:
-            - 'deps'
+      - 'test-go-linux'
       - 'amd64-package':
           requires: 
             - 'test-go-linux'
