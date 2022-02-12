@@ -134,7 +134,11 @@ func (k *d2lKinesisOutput) Connect() error {
 		Token:       k.Token,
 		EndpointURL: k.EndpointURL,
 	}
-	configProvider := credentialConfig.Credentials()
+	configProvider, configProviderErr := credentialConfig.Credentials()
+	if configProviderErr != nil {
+		return configProviderErr
+	}
+
 	svc := kinesis.New(configProvider)
 
 	_, err := svc.DescribeStreamSummary(&kinesis.DescribeStreamSummaryInput{
