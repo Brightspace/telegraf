@@ -6,6 +6,7 @@ Please check the list of [supported SQL drivers](../../../docs/SQL_DRIVERS_INPUT
 `driver` name and options for the data-source-name (`dsn`) options.
 
 ### Configuration
+## Configuration
 
 This section contains the default TOML to configure the plugin.  You can
 generate it using `telegraf --usage <plugin-name>`.
@@ -22,6 +23,7 @@ generate it using `telegraf --usage <plugin-name>`.
   dsn = "username:password@mysqlserver:3307/dbname?param=value"
 
   ## Timeout for any operation
+  ## Note that the timeout for queries is per query not per gather.
   # timeout = "5s"
 
   ## Connection time limits
@@ -79,6 +81,13 @@ generate it using `telegraf --usage <plugin-name>`.
 		# field_columns_uint = []
 		# field_columns_bool = []
 		# field_columns_string = []
+    ## the automatic (driver-based) conversion below.
+    ## NOTE: Columns should not be specified for multiple types or the resulting type is undefined.
+    # field_columns_float = []
+    # field_columns_int = []
+    # field_columns_uint = []
+    # field_columns_bool = []
+    # field_columns_string = []
 
     ## Column names containing fields (automatic types)
     ## An empty include list is equivalent to '[*]' and all returned columns will be accepted. An empty
@@ -98,6 +107,20 @@ With these options you can limit the number of connections kept open by this plu
 workings can be found in the [golang sql documentation](https://golang.org/pkg/database/sql/#DB.SetConnMaxIdleTime).
 
 #### Query sections
+## Options
+
+### Driver
+
+The `driver` and `dsn` options specify how to connect to the database. As especially the `dsn` format and
+values vary with the `driver` refer to the list of [supported SQL drivers](../../../docs/SQL_DRIVERS_INPUT.md) for possible values and more details.
+
+### Connection limits
+
+With these options you can limit the number of connections kept open by this plugin. Details about the exact
+workings can be found in the [golang sql documentation](https://golang.org/pkg/database/sql/#DB.SetConnMaxIdleTime).
+
+### Query sections
+
 Multiple `query` sections can be specified for this plugin. Each specified query will first be prepared on the server
 and then executed in every interval using the column mappings specified. Please note that `tag` and `field` columns
 are not exclusive, i.e. a column can be added to both. When using both `include` and `exclude` lists, the `exclude`
@@ -114,6 +137,17 @@ types are accepted.
 Only columns of type `string`  are accepted.
 
 #### Time
+## Types
+
+This plugin relies on the driver to do the type conversion. For the different properties of the metric the following
+types are accepted.
+
+### Measurement
+
+Only columns of type `string`  are accepted.
+
+### Time
+
 For the metric time columns of type `time` are accepted directly. For numeric columns, `time_format` should be set
 to any of `unix`, `unix_ms`, `unix_ns` or `unix_us` accordingly. By default the a timestamp in `unix` format is
 expected. For string columns, please specify the `time_format` accordingly.
@@ -124,6 +158,13 @@ For tags columns with textual values (`string` and `bytes`), signed and unsigned
 floating-point (32 and 64 bit), `boolean` and `time` values are accepted. Those values will be converted to string.
 
 #### Fields
+### Tags
+
+For tags columns with textual values (`string` and `bytes`), signed and unsigned integers (8, 16, 32 and 64 bit),
+floating-point (32 and 64 bit), `boolean` and `time` values are accepted. Those values will be converted to string.
+
+### Fields
+
 For fields columns with textual values (`string` and `bytes`), signed and unsigned integers (8, 16, 32 and 64 bit),
 floating-point (32 and 64 bit), `boolean` and `time` values are accepted. Here `bytes` will be converted to `string`,
 signed and unsigned integer values will be converted to `int64` or `uint64` respectively. Floating-point values are converted to `float64` and `time` is converted to a nanosecond timestamp of type `int64`.
@@ -131,6 +172,11 @@ signed and unsigned integer values will be converted to `int64` or `uint64` resp
 ### Example Output
 Using the [MariaDB sample database](https://www.mariadbtutorial.com/getting-started/mariadb-sample-database) and the
 configuration
+## Example Output
+
+Using the [MariaDB sample database](https://www.mariadbtutorial.com/getting-started/mariadb-sample-database) and the
+configuration
+
 ```toml
 [[inputs.sql]]
   driver = "mysql"
@@ -145,6 +191,13 @@ configuration
 
 Telegraf will output the following metrics
 ```
+    tag_columns_include = ["name"]
+    field_columns_exclude = ["name"]
+```
+
+Telegraf will output the following metrics
+
+```shell
 nation,host=Hugin,name=John guest_id=1i 1611332164000000000
 nation,host=Hugin,name=Jane guest_id=2i 1611332164000000000
 nation,host=Hugin,name=Jean guest_id=3i 1611332164000000000

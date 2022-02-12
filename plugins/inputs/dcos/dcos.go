@@ -2,14 +2,15 @@ package dcos
 
 import (
 	"context"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go/v4"
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/config"
 	"github.com/influxdata/telegraf/filter"
@@ -236,9 +237,7 @@ func (d *DCOS) createPoints(m *Metrics) []*point {
 			fieldKey = fieldKey + "_bytes"
 		}
 
-		if strings.HasPrefix(fieldKey, "dcos_metrics_module_") {
-			fieldKey = strings.TrimPrefix(fieldKey, "dcos_metrics_module_")
-		}
+		fieldKey = strings.TrimPrefix(fieldKey, "dcos_metrics_module_")
 
 		tagset := make([]string, 0, len(tags))
 		for k, v := range tags {
@@ -352,13 +351,13 @@ func (d *DCOS) createClient() (Client, error) {
 		return nil, err
 	}
 
-	url, err := url.Parse(d.ClusterURL)
+	address, err := url.Parse(d.ClusterURL)
 	if err != nil {
 		return nil, err
 	}
 
 	client := NewClusterClient(
-		url,
+		address,
 		time.Duration(d.ResponseTimeout),
 		d.MaxConnections,
 		tlsCfg,
@@ -369,7 +368,7 @@ func (d *DCOS) createClient() (Client, error) {
 
 func (d *DCOS) createCredentials() (Credentials, error) {
 	if d.ServiceAccountID != "" && d.ServiceAccountPrivateKey != "" {
-		bs, err := ioutil.ReadFile(d.ServiceAccountPrivateKey)
+		bs, err := os.ReadFile(d.ServiceAccountPrivateKey)
 		if err != nil {
 			return nil, err
 		}
