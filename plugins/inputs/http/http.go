@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -13,7 +13,6 @@ import (
 	"github.com/influxdata/telegraf/internal"
 	httpconfig "github.com/influxdata/telegraf/plugins/common/http"
 	"github.com/influxdata/telegraf/plugins/inputs"
-	"github.com/influxdata/telegraf/plugins/parsers"
 )
 
 type HTTP struct {
@@ -33,12 +32,12 @@ type HTTP struct {
 
 	SuccessStatusCodes []int `toml:"success_status_codes"`
 
-	client *http.Client
+	Log telegraf.Logger `toml:"-"`
+
 	httpconfig.HTTPClientConfig
 
-	// The parser will automatically be set by Telegraf core code because
-	// this plugin implements the ParserInput interface (i.e. the SetParser method)
-	parser parsers.Parser
+	client     *http.Client
+	parserFunc telegraf.ParserFunc
 }
 
 var sampleConfig = `
@@ -84,6 +83,16 @@ var sampleConfig = `
   ## Use TLS but skip chain & host verification
   # insecure_skip_verify = false
 
+  ## Optional Cookie authentication
+  # cookie_auth_url = "https://localhost/authMe"
+  # cookie_auth_method = "POST"
+  # cookie_auth_username = "username"
+  # cookie_auth_password = "pa$$word"
+  # cookie_auth_headers = '{"Content-Type": "application/json", "X-MY-HEADER":"hello"}'
+  # cookie_auth_body = '{"username": "user", "password": "pa$$word", "authenticate": "me"}'
+  ## cookie_auth_renewal not set or set to "0" will auth once and never renew the cookie
+  # cookie_auth_renewal = "5m"
+
   ## Amount of time allowed to complete the HTTP request
   # timeout = "5s"
 
@@ -109,7 +118,7 @@ func (*HTTP) Description() string {
 
 func (h *HTTP) Init() error {
 	ctx := context.Background()
-	client, err := h.HTTPClientConfig.CreateClient(ctx)
+	client, err := h.HTTPClientConfig.CreateClient(ctx, h.Log)
 	if err != nil {
 		return err
 	}
@@ -142,9 +151,9 @@ func (h *HTTP) Gather(acc telegraf.Accumulator) error {
 	return nil
 }
 
-// SetParser takes the data_format from the config and finds the right parser for that format
-func (h *HTTP) SetParser(parser parsers.Parser) {
-	h.parser = parser
+// SetParserFunc takes the data_format from the config and finds the right parser for that format
+func (h *HTTP) SetParserFunc(fn telegraf.ParserFunc) {
+	h.parserFunc = fn
 }
 
 // Gathers data from a particular URL
@@ -162,7 +171,9 @@ func (h *HTTP) gatherURL(
 	if err != nil {
 		return err
 	}
-	defer body.Close()
+	if body != nil {
+		defer body.Close()
+	}
 
 	request, err := http.NewRequest(h.Method, url, body)
 	if err != nil {
@@ -170,7 +181,7 @@ func (h *HTTP) gatherURL(
 	}
 
 	if h.BearerToken != "" {
-		token, err := ioutil.ReadFile(h.BearerToken)
+		token, err := os.ReadFile(h.BearerToken)
 		if err != nil {
 			return err
 		}
@@ -215,14 +226,19 @@ func (h *HTTP) gatherURL(
 			h.SuccessStatusCodes)
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading body failed: %v", err)
 	}
 
-	metrics, err := h.parser.Parse(b)
+	// Instantiate a new parser for the new data to avoid trouble with stateful parsers
+	parser, err := h.parserFunc()
 	if err != nil {
-		return err
+		return fmt.Errorf("instantiating parser failed: %v", err)
+	}
+	metrics, err := parser.Parse(b)
+	if err != nil {
+		return fmt.Errorf("parsing metrics failed: %v", err)
 	}
 
 	for _, metric := range metrics {
@@ -236,6 +252,10 @@ func (h *HTTP) gatherURL(
 }
 
 func makeRequestBodyReader(contentEncoding, body string) (io.ReadCloser, error) {
+	if body == "" {
+		return nil, nil
+	}
+
 	var reader io.Reader = strings.NewReader(body)
 	if contentEncoding == "gzip" {
 		rc, err := internal.CompressWithGzip(reader)
@@ -244,7 +264,7 @@ func makeRequestBodyReader(contentEncoding, body string) (io.ReadCloser, error) 
 		}
 		return rc, nil
 	}
-	return ioutil.NopCloser(reader), nil
+	return io.NopCloser(reader), nil
 }
 
 func init() {

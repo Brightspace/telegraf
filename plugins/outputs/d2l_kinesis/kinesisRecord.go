@@ -1,11 +1,11 @@
 package d2lkinesis
 
 import (
-	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 )
 
 func createKinesisRecord(
-	entry *kinesis.PutRecordsRequestEntry,
+	entry types.PutRecordsRequestEntry,
 	metrics int,
 ) *kinesisRecord {
 
@@ -23,7 +23,7 @@ func createKinesisRecord(
 type kinesisRecord struct {
 
 	// The AWS SDK PutRecords request entry
-	Entry *kinesis.PutRecordsRequestEntry
+	Entry types.PutRecordsRequestEntry
 
 	// The number of metrics serialized into the entry
 	Metrics int

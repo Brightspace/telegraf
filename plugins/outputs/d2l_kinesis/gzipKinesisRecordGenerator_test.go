@@ -673,10 +673,6 @@ func assertGZippedKinesisRecord(
 	}
 
 	entry := actual.Entry
-	if entry == nil {
-		assert.NotNil(actual, "Entry should not be nil")
-		return
-	}
 
 	assert.Nil(
 		entry.ExplicitHashKey,
