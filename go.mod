@@ -143,12 +143,12 @@ require (
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
+	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a
 	golang.org/x/text v0.3.7
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20211230205640-daad0b7ba671
 	gonum.org/v1/gonum v0.9.3
-	google.golang.org/api v0.65.0
-	google.golang.org/genproto v0.0.0-20220111164026-67b88f271998
+	google.golang.org/api v0.68.0
+	google.golang.org/genproto v0.0.0-20220204002441-d6cc3cc0770e
 	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/gorethink/gorethink.v3 v3.0.5
@@ -163,7 +163,7 @@ require (
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
-	cloud.google.com/go/compute v0.1.0 // indirect
+	cloud.google.com/go/compute v1.2.0 // indirect
 	cloud.google.com/go/iam v0.1.1 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	github.com/Azure/azure-amqp-common-go/v3 v3.2.3 // indirect
