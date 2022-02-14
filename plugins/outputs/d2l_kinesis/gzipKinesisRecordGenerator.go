@@ -6,7 +6,7 @@ import (
 	"compress/gzip"
 	"io"
 
-	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/plugins/serializers"
 )
@@ -82,7 +82,7 @@ func (g *gzipKinesisRecordGenerator) yieldRecord(
 
 	partitionKey := g.pkGenerator()
 
-	entry := &kinesis.PutRecordsRequestEntry{
+	entry := types.PutRecordsRequestEntry{
 		Data:         data,
 		PartitionKey: &partitionKey,
 	}
