@@ -3,7 +3,6 @@ package statsd
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"net"
 	"sort"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/config"
@@ -35,6 +36,21 @@ const (
 	parserGoRoutines = 5
 )
 
+var errParsing = errors.New("error parsing statsd line")
+
+// Number will get parsed as an int or float depending on what is passed
+type Number float64
+
+func (n *Number) UnmarshalTOML(b []byte) error {
+	value, err := strconv.ParseFloat(string(b), 64)
+	if err != nil {
+		return err
+	}
+
+	*n = Number(value)
+	return nil
+}
+
 // Statsd allows the importing of statsd and dogstatsd data.
 type Statsd struct {
 	// Protocol used on listener - udp or tcp
@@ -49,7 +65,7 @@ type Statsd struct {
 
 	// Percentiles specifies the percentiles that will be calculated for timing
 	// and histogram stats.
-	Percentiles     []float64
+	Percentiles     []Number
 	PercentileLimit int
 
 	DeleteGauges   bool
@@ -305,7 +321,7 @@ func (s *Statsd) Gather(acc telegraf.Accumulator) error {
 			fields[prefix+"count"] = stats.Count()
 			for _, percentile := range s.Percentiles {
 				name := fmt.Sprintf("%s%v_percentile", prefix, percentile)
-				fields[name] = stats.Percentile(percentile)
+				fields[name] = stats.Percentile(float64(percentile))
 			}
 		}
 
@@ -568,6 +584,10 @@ func (s *Statsd) parser() error {
 					}
 				default:
 					if err := s.parseStatsdLine(line); err != nil {
+						if errors.Cause(err) == errParsing {
+							// parsing errors log when the error occurs
+							continue
+						}
 						return err
 					}
 				}
@@ -605,7 +625,7 @@ func (s *Statsd) parseStatsdLine(line string) error {
 	bits := strings.Split(line, ":")
 	if len(bits) < 2 {
 		s.Log.Errorf("Splitting ':', unable to parse metric: %s", line)
-		return errors.New("error Parsing statsd line")
+		return errParsing
 	}
 
 	// Extract bucket name from individual metric bits
@@ -621,7 +641,7 @@ func (s *Statsd) parseStatsdLine(line string) error {
 		pipesplit := strings.Split(bit, "|")
 		if len(pipesplit) < 2 {
 			s.Log.Errorf("Splitting '|', unable to parse metric: %s", line)
-			return errors.New("error parsing statsd line")
+			return errParsing
 		} else if len(pipesplit) > 2 {
 			sr := pipesplit[2]
 
@@ -645,14 +665,14 @@ func (s *Statsd) parseStatsdLine(line string) error {
 			m.mtype = pipesplit[1]
 		default:
 			s.Log.Errorf("Metric type %q unsupported", pipesplit[1])
-			return errors.New("error parsing statsd line")
+			return errParsing
 		}
 
 		// Parse the value
 		if strings.HasPrefix(pipesplit[0], "-") || strings.HasPrefix(pipesplit[0], "+") {
 			if m.mtype != "g" && m.mtype != "c" {
 				s.Log.Errorf("+- values are only supported for gauges & counters, unable to parse metric: %s", line)
-				return errors.New("error parsing statsd line")
+				return errParsing
 			}
 			m.additive = true
 		}
@@ -662,7 +682,7 @@ func (s *Statsd) parseStatsdLine(line string) error {
 			v, err := strconv.ParseFloat(pipesplit[0], 64)
 			if err != nil {
 				s.Log.Errorf("Parsing value to float64, unable to parse metric: %s", line)
-				return errors.New("error parsing statsd line")
+				return errParsing
 			}
 			m.floatvalue = v
 		case "c":
@@ -672,7 +692,7 @@ func (s *Statsd) parseStatsdLine(line string) error {
 				v2, err2 := strconv.ParseFloat(pipesplit[0], 64)
 				if err2 != nil {
 					s.Log.Errorf("Parsing value to int64, unable to parse metric: %s", line)
-					return errors.New("error parsing statsd line")
+					return errParsing
 				}
 				v = int64(v2)
 			}
@@ -726,10 +746,10 @@ func (s *Statsd) parseStatsdLine(line string) error {
 // config file. If there is a match, it will parse the name of the metric and
 // map of tags.
 // Return values are (<name>, <field>, <tags>)
-func (s *Statsd) parseName(bucket string) (string, string, map[string]string) {
+func (s *Statsd) parseName(bucket string) (name string, field string, tags map[string]string) {
 	s.Lock()
 	defer s.Unlock()
-	tags := make(map[string]string)
+	tags = make(map[string]string)
 
 	bucketparts := strings.Split(bucket, ",")
 	// Parse out any tags in the bucket
@@ -742,8 +762,7 @@ func (s *Statsd) parseName(bucket string) (string, string, map[string]string) {
 		}
 	}
 
-	var field string
-	name := bucketparts[0]
+	name = bucketparts[0]
 
 	p := s.graphiteParser
 	var err error
@@ -770,16 +789,20 @@ func (s *Statsd) parseName(bucket string) (string, string, map[string]string) {
 }
 
 // Parse the key,value out of a string that looks like "key=value"
-func parseKeyValue(keyvalue string) (string, string) {
-	var key, val string
-
-	split := strings.Split(keyvalue, "=")
+func parseKeyValue(keyValue string) (key string, val string) {
+	split := strings.Split(keyValue, "=")
 	// Must be exactly 2 to get anything meaningful out of them
 	if len(split) == 2 {
 		key = split[0]
 		val = split[1]
 	} else if len(split) == 1 {
 		val = split[0]
+	} else if len(split) > 2 {
+		// fix: https://github.com/influxdata/telegraf/issues/10113
+		// fix: value has "=" parse error
+		// uri=/service/endpoint?sampleParam={paramValue} parse value key="uri", val="/service/endpoint?sampleParam\={paramValue}"
+		key = split[0]
+		val = strings.Join(split[1:], "=")
 	}
 
 	return key, val

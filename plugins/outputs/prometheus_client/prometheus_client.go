@@ -10,6 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/config"
 	"github.com/influxdata/telegraf/internal"
@@ -17,8 +21,6 @@ import (
 	"github.com/influxdata/telegraf/plugins/outputs"
 	"github.com/influxdata/telegraf/plugins/outputs/prometheus_client/v1"
 	"github.com/influxdata/telegraf/plugins/outputs/prometheus_client/v2"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -121,9 +123,15 @@ func (p *PrometheusClient) Init() error {
 	for collector := range defaultCollectors {
 		switch collector {
 		case "gocollector":
-			registry.Register(prometheus.NewGoCollector())
+			err := registry.Register(collectors.NewGoCollector())
+			if err != nil {
+				return err
+			}
 		case "process":
-			registry.Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+			err := registry.Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+			if err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unrecognized collector %s", collector)
 		}
@@ -159,12 +167,19 @@ func (p *PrometheusClient) Init() error {
 	authHandler := internal.AuthHandler(p.BasicUsername, p.BasicPassword, "prometheus", onAuthError)
 	rangeHandler := internal.IPRangeHandler(ipRange, onError)
 	promHandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{ErrorHandling: promhttp.ContinueOnError})
+	landingPageHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := w.Write([]byte("Telegraf Output Plugin: Prometheus Client "))
+		if err != nil {
+			p.Log.Errorf("Error occurred when writing HTTP reply: %v", err)
+		}
+	})
 
 	mux := http.NewServeMux()
 	if p.Path == "" {
-		p.Path = "/"
+		p.Path = "/metrics"
 	}
 	mux.Handle(p.Path, authHandler(rangeHandler(promHandler)))
+	mux.Handle("/", authHandler(rangeHandler(landingPageHandler)))
 
 	tlsConfig, err := p.TLSConfig()
 	if err != nil {
@@ -225,7 +240,7 @@ func onError(rw http.ResponseWriter, code int) {
 	http.Error(rw, http.StatusText(code), code)
 }
 
-// Address returns the address the plugin is listening on.  If not listening
+// URL returns the address the plugin is listening on.  If not listening
 // an empty string is returned.
 func (p *PrometheusClient) URL() string {
 	if p.url != nil {
