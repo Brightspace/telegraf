@@ -1,13 +1,14 @@
 package d2lkinesis
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/kinesis"
-	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"github.com/influxdata/telegraf"
 	internalaws "github.com/influxdata/telegraf/config/aws"
 	"github.com/influxdata/telegraf/plugins/outputs"
@@ -20,6 +21,10 @@ const defaultMaxRecordRetries uint8 = 4
 const awsMaxRecordsPerRequest = 500
 const awsMaxRecordSize = 1048576  // 1 MiB
 const awsMaxRequestSize = 5242880 // 5 MiB
+
+type KinesisAPI interface {
+	PutRecords(ctx context.Context, params *kinesis.PutRecordsInput, optFns ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error)
+}
 
 type (
 	d2lKinesisOutput struct {
@@ -43,7 +48,7 @@ type (
 		Log             telegraf.Logger `toml:"-"`
 		recordGenerator kinesisRecordGenerator
 		serializer      serializers.Serializer
-		svc             kinesisiface.KinesisAPI
+		svc             KinesisAPI
 	}
 )
 
@@ -139,9 +144,9 @@ func (k *d2lKinesisOutput) Connect() error {
 		return configProviderErr
 	}
 
-	svc := kinesis.New(configProvider)
+	svc := kinesis.NewFromConfig(configProvider)
 
-	_, err := svc.DescribeStreamSummary(&kinesis.DescribeStreamSummaryInput{
+	_, err := svc.DescribeStreamSummary(context.Background(), &kinesis.DescribeStreamSummaryInput{
 		StreamName: aws.String(k.StreamName),
 	})
 	k.svc = svc
@@ -279,9 +284,9 @@ func (k *d2lKinesisOutput) putRecords(
 
 	totalRecordCount := len(records)
 
-	entries := make([]*kinesis.PutRecordsRequestEntry, totalRecordCount)
+	entries := make([]types.PutRecordsRequestEntry, totalRecordCount)
 	for i, record := range records {
-		entries[i] = record.Entry
+		entries[i] = *record.Entry
 	}
 
 	payload := kinesis.PutRecordsInput{
@@ -290,7 +295,7 @@ func (k *d2lKinesisOutput) putRecords(
 	}
 
 	start := time.Now()
-	resp, err := k.svc.PutRecords(&payload)
+	resp, err := k.svc.PutRecords(context.Background(), &payload)
 	duration := time.Since(start)
 
 	if err != nil {
@@ -304,7 +309,7 @@ func (k *d2lKinesisOutput) putRecords(
 		return records
 	}
 
-	successfulRecordCount := int64(totalRecordCount) - *resp.FailedRecordCount
+	successfulRecordCount := totalRecordCount - int(*resp.FailedRecordCount)
 
 	k.Log.Debugf(
 		"Wrote %d of %d record(s) to Kinesis in %s",

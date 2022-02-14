@@ -1,12 +1,13 @@
 package d2lkinesis
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/kinesis"
-	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/testutil"
 	"github.com/stretchr/testify/assert"
@@ -32,8 +33,8 @@ func Test_D2lKinesisOutput_PutRecords_SingleRecord_Success(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
 			},
 		},
 	})
@@ -59,8 +60,8 @@ func Test_D2lKinesisOutput_PutRecords_SingleRecord_Failure(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
 			},
 		},
 	})
@@ -87,8 +88,8 @@ func Test_D2lKinesisOutput_PutRecords_SingleRecord_Error(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
 			},
 		},
 	})
@@ -114,9 +115,9 @@ func Test_D2lKinesisOutput_PutRecords_MultipleRecords_Success(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
 			},
 		},
 	})
@@ -126,7 +127,7 @@ func Test_D2lKinesisOutput_PutRecords_MultipleRecords_PartialSuccess(t *testing.
 	assert := assert.New(t)
 
 	svc := &mockKinesisPutRecords{}
-	svc.SetupResponse(2, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(2, []types.PutRecordsResultEntry{
 		createPutRecordsResultErrorEntry(
 			"ProvisionedThroughputExceededException",
 			"Rate exceeded for shard shardId-000000000001 in stream exampleStreamName under account 111111111111.",
@@ -160,10 +161,10 @@ func Test_D2lKinesisOutput_PutRecords_MultipleRecords_PartialSuccess(t *testing.
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
-				record3.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
+				*record3.Entry,
 			},
 		},
 	})
@@ -192,9 +193,9 @@ func Test_D2lKinesisOutput_PutRecords_MultipleRecords_Failure(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
 			},
 		},
 	})
@@ -221,8 +222,8 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_SingleRecord_Success(t *
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
 			},
 		},
 	})
@@ -249,8 +250,8 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_SingleRecord_Failure(t *
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
 			},
 		},
 	})
@@ -277,9 +278,9 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_MultipleRecords_Success(
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
 			},
 		},
 	})
@@ -289,7 +290,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_MultipleRecords_PartialS
 	assert := assert.New(t)
 
 	svc := &mockKinesisPutRecords{}
-	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(1, []types.PutRecordsResultEntry{
 		createPutRecordsResultEntry(
 			"shardId-000000000000",
 			"49543463076548007577105092703039560359975228518395012686",
@@ -323,10 +324,10 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_MultipleRecords_PartialS
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
-				record3.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
+				*record3.Entry,
 			},
 		},
 	})
@@ -356,9 +357,9 @@ func Test_D2lKinesisOutput_PutRecordBatches_SingleBatch_MultipleRecords_Failure(
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
 			},
 		},
 	})
@@ -396,18 +397,18 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RequestSizeLimit_Suc
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
-				record3.Entry,
-				record4.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
+				*record3.Entry,
+				*record4.Entry,
 			},
 		},
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record5.Entry,
-				record6.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record5.Entry,
+				*record6.Entry,
 			},
 		},
 	})
@@ -417,7 +418,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RequestSizeLimit_Par
 	assert := assert.New(t)
 
 	svc := &mockKinesisPutRecords{}
-	svc.SetupResponse(2, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(2, []types.PutRecordsResultEntry{
 		createPutRecordsResultErrorEntry(
 			"ProvisionedThroughputExceededException",
 			"Rate exceeded for shard shardId-000000000001 in stream exampleStreamName under account 111111111111.",
@@ -435,7 +436,7 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RequestSizeLimit_Par
 			"49543463076548007577105092703039560359975228518395012686",
 		),
 	})
-	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(1, []types.PutRecordsResultEntry{
 		createPutRecordsResultErrorEntry(
 			"ProvisionedThroughputExceededException",
 			"Rate exceeded for shard shardId-000000000002 in stream exampleStreamName under account 111111111111.",
@@ -475,18 +476,18 @@ func Test_D2lKinesisOutput_PutRecordBatches_MultipleBatches_RequestSizeLimit_Par
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
-				record3.Entry,
-				record4.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
+				*record3.Entry,
+				*record4.Entry,
 			},
 		},
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record5.Entry,
-				record6.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record5.Entry,
+				*record6.Entry,
 			},
 		},
 	})
@@ -587,9 +588,9 @@ func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_Success(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
 			},
 		},
 	})
@@ -599,7 +600,7 @@ func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_SingleRetry(t *testing.T) {
 	assert := assert.New(t)
 
 	svc := &mockKinesisPutRecords{}
-	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(1, []types.PutRecordsResultEntry{
 		createPutRecordsResultEntry(
 			"shardId-000000000000",
 			"49543463076548007577105092703039560359975228518395012686",
@@ -609,7 +610,7 @@ func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_SingleRetry(t *testing.T) {
 			"Internal service failure.",
 		),
 	})
-	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(1, []types.PutRecordsResultEntry{
 		createPutRecordsResultEntry(
 			"shardId-000000000001",
 			"49543463076570308322303623326179887152428262250726293522",
@@ -630,15 +631,15 @@ func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_SingleRetry(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
 			},
 		},
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record2.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record2.Entry,
 			},
 		},
 	})
@@ -648,7 +649,7 @@ func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_MaxRetries(t *testing.T) {
 	assert := assert.New(t)
 
 	svc := &mockKinesisPutRecords{}
-	svc.SetupResponse(2, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(2, []types.PutRecordsResultEntry{
 		createPutRecordsResultErrorEntry(
 			"InternalFailure",
 			"Internal service failure.",
@@ -662,7 +663,7 @@ func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_MaxRetries(t *testing.T) {
 			"Internal service failure.",
 		),
 	})
-	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(1, []types.PutRecordsResultEntry{
 		createPutRecordsResultEntry(
 			"shardId-000000000001",
 			"49543463076570308322303623326179887152428262250726293522",
@@ -672,7 +673,7 @@ func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_MaxRetries(t *testing.T) {
 			"Internal service failure.",
 		),
 	})
-	svc.SetupResponse(1, []*kinesis.PutRecordsResultEntry{
+	svc.SetupResponse(1, []types.PutRecordsResultEntry{
 		createPutRecordsResultErrorEntry(
 			"InternalFailure",
 			"Internal service failure.",
@@ -695,23 +696,23 @@ func Test_D2lKinesisOutput_PutRecordBatchesWithRetry_MaxRetries(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record2.Entry,
-				record3.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record2.Entry,
+				*record3.Entry,
 			},
 		},
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record1.Entry,
-				record3.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record1.Entry,
+				*record3.Entry,
 			},
 		},
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
-				record3.Entry,
+			Records: []types.PutRecordsRequestEntry{
+				*record3.Entry,
 			},
 		},
 	})
@@ -758,7 +759,7 @@ func Test_D2lKinesisOutput_Write_MultipleMetrics(t *testing.T) {
 	svc.AssertRequests(assert, []*kinesis.PutRecordsInput{
 		{
 			StreamName: aws.String(streamName),
-			Records: []*kinesis.PutRecordsRequestEntry{
+			Records: []types.PutRecordsRequestEntry{
 				{
 					PartitionKey: aws.String(testPartitionKey),
 					Data:         data,
@@ -835,9 +836,9 @@ func assertFailedRecords(
 func createPutRecordsResultEntry(
 	shardID string,
 	sequenceNumber string,
-) *kinesis.PutRecordsResultEntry {
+) types.PutRecordsResultEntry {
 
-	return &kinesis.PutRecordsResultEntry{
+	return types.PutRecordsResultEntry{
 		ShardId:        aws.String(shardID),
 		SequenceNumber: aws.String(sequenceNumber),
 	}
@@ -846,9 +847,9 @@ func createPutRecordsResultEntry(
 func createPutRecordsResultErrorEntry(
 	errorCode string,
 	errorMessage string,
-) *kinesis.PutRecordsResultEntry {
+) types.PutRecordsResultEntry {
 
-	return &kinesis.PutRecordsResultEntry{
+	return types.PutRecordsResultEntry{
 		ErrorCode:    aws.String(errorCode),
 		ErrorMessage: aws.String(errorMessage),
 	}
@@ -870,13 +871,13 @@ func createTestKinesisOutput(
 
 func selectPutRecordsRequestEntries(
 	records []*kinesisRecord,
-) []*kinesis.PutRecordsRequestEntry {
+) []types.PutRecordsRequestEntry {
 
 	count := len(records)
-	entries := make([]*kinesis.PutRecordsRequestEntry, count)
+	entries := make([]types.PutRecordsRequestEntry, count)
 
 	for i, record := range records {
-		entries[i] = record.Entry
+		entries[i] = *record.Entry
 	}
 
 	return entries
@@ -890,21 +891,21 @@ type mockKinesisPutRecordsResponse struct {
 }
 
 type mockKinesisPutRecords struct {
-	kinesisiface.KinesisAPI
+	KinesisAPI
 
 	requests  []*kinesis.PutRecordsInput
 	responses []*mockKinesisPutRecordsResponse
 }
 
 func (m *mockKinesisPutRecords) SetupResponse(
-	failedRecordCount int64,
-	records []*kinesis.PutRecordsResultEntry,
+	failedRecordCount int32,
+	records []types.PutRecordsResultEntry,
 ) {
 
 	m.responses = append(m.responses, &mockKinesisPutRecordsResponse{
 		Err: nil,
 		Output: &kinesis.PutRecordsOutput{
-			FailedRecordCount: aws.Int64(failedRecordCount),
+			FailedRecordCount: aws.Int32(failedRecordCount),
 			Records:           records,
 		},
 	})
@@ -915,24 +916,24 @@ func (m *mockKinesisPutRecords) SetupGenericResponse(
 	failedRecordCount uint32,
 ) {
 
-	records := []*kinesis.PutRecordsResultEntry{}
+	records := []types.PutRecordsResultEntry{}
 
 	for i := uint32(0); i < successfulRecordCount; i++ {
 		sequenceNumber := fmt.Sprintf("%d", i)
-		records = append(records, &kinesis.PutRecordsResultEntry{
+		records = append(records, types.PutRecordsResultEntry{
 			SequenceNumber: aws.String(sequenceNumber),
 			ShardId:        aws.String("shardId-000000000003"),
 		})
 	}
 
 	for i := uint32(0); i < failedRecordCount; i++ {
-		records = append(records, &kinesis.PutRecordsResultEntry{
+		records = append(records, types.PutRecordsResultEntry{
 			ErrorCode:    aws.String("InternalFailure"),
 			ErrorMessage: aws.String("Internal Service Failure"),
 		})
 	}
 
-	m.SetupResponse(int64(failedRecordCount), records)
+	m.SetupResponse(int32(failedRecordCount), records)
 }
 
 func (m *mockKinesisPutRecords) SetupErrorResponse(err error) {
@@ -943,14 +944,14 @@ func (m *mockKinesisPutRecords) SetupErrorResponse(err error) {
 	})
 }
 
-func (m *mockKinesisPutRecords) PutRecords(input *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
+func (m *mockKinesisPutRecords) PutRecords(ctx context.Context, params *kinesis.PutRecordsInput, optFns ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error) {
 
 	reqNum := len(m.requests)
 	if reqNum > len(m.responses) {
 		return nil, fmt.Errorf("Response for request %+v not setup", reqNum)
 	}
 
-	m.requests = append(m.requests, input)
+	m.requests = append(m.requests, params)
 
 	resp := m.responses[reqNum]
 	return resp.Output, resp.Err

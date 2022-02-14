@@ -3,7 +3,7 @@ package d2lkinesis
 import (
 	"io"
 
-	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +20,7 @@ func createTestKinesisRecord(
 
 	partitionKey := testPartitionKey
 
-	entry := &kinesis.PutRecordsRequestEntry{
+	entry := &types.PutRecordsRequestEntry{
 		Data:            data,
 		ExplicitHashKey: nil,
 		PartitionKey:    &partitionKey,
