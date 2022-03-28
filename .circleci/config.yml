@@ -437,27 +437,6 @@ jobs:
       - generate-config:
           os: windows
 
-  d2l-publish-packages:
-    executor: aws-cli/default
-    steps:
-      - checkout
-      - attach_workspace:
-          at: '.'
-      - aws-cli/install
-      - run:
-          command: |
-            sha=`echo $CIRCLE_SHA1 | head -c 8`
-            version=`cat build_version.txt | sed 's/ *$//g'`
-            aws configure --profile d2l_publisher set credential_source Environment
-            aws configure --profile d2l_publisher set role_arn arn:aws:iam::573744120172:role/d2l-telegraf-publisher
-            aws sts get-caller-identity --profile d2l_publisher
-            aws s3 cp \
-                --acl public-read \
-                --profile d2l_publisher \
-                --region us-east-1 \
-                --recursive \
-                dist/ "s3://d2l-telegraf/$version~$sha/"
-
 workflows:
   version: 2
   check:
@@ -759,15 +738,3 @@ workflows:
       - 'windows-package':
           requires: 
             - 'test-go-windows'
-
-      # Publish
-      - 'd2l-publish-packages':
-          requires: 
-            - 'amd64-package'
-            - 'arm64-package'
-            - 'static-package'
-            - 'windows-package'
-          filters:
-            branches:
-              only:
-                - master
