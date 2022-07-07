@@ -200,7 +200,7 @@ func TestTags(t *testing.T) {
 	require.True(t, acc.HasMeasurement("x509_cert"))
 
 	require.True(t, acc.HasTag("x509_cert", "common_name"))
-	require.Equal(t, "server.localdomain", acc.TagValue("x509_cert", "common_name"))
+	require.Equal(t, "localhost", acc.TagValue("x509_cert", "common_name"))
 
 	require.True(t, acc.HasTag("x509_cert", "signature_algorithm"))
 	require.Equal(t, "SHA256-RSA", acc.TagValue("x509_cert", "signature_algorithm"))
@@ -287,7 +287,7 @@ func TestGatherChain(t *testing.T) {
 	}
 }
 
-func TestGatherUDPCert(t *testing.T) {
+func TestGatherUDPCertIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
@@ -320,29 +320,6 @@ func TestGatherUDPCert(t *testing.T) {
 	require.True(t, acc.HasMeasurement("x509_cert"))
 }
 
-func TestStrings(t *testing.T) {
-	sc := X509Cert{}
-	require.NoError(t, sc.Init())
-
-	tests := []struct {
-		name     string
-		method   string
-		returned string
-		expected string
-	}{
-		{name: "description", method: "Description", returned: sc.Description(), expected: description},
-		{name: "sample config", method: "SampleConfig", returned: sc.SampleConfig(), expected: sampleConfig},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if test.returned != test.expected {
-				t.Errorf("Expected method %s to return '%s', found '%s'.", test.method, test.expected, test.returned)
-			}
-		})
-	}
-}
-
 func TestGatherCertIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -359,7 +336,7 @@ func TestGatherCertIntegration(t *testing.T) {
 	require.True(t, acc.HasMeasurement("x509_cert"))
 }
 
-func TestGatherCertMustNotTimeout(t *testing.T) {
+func TestGatherCertMustNotTimeoutIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
