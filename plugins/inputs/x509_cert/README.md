@@ -3,11 +3,12 @@
 This plugin provides information about X509 certificate accessible via local
 file or network connection.
 
-When using a UDP address as a certificate source, the server must support [DTLS](https://en.wikipedia.org/wiki/Datagram_Transport_Layer_Security).
+When using a UDP address as a certificate source, the server must support
+[DTLS](https://en.wikipedia.org/wiki/Datagram_Transport_Layer_Security).
 
 ## Configuration
 
-```toml
+```toml @sample.conf
 # Reads metrics from a SSL certificate
 [[inputs.x509_cert]]
   ## List certificate sources, support wildcard expands for files
@@ -30,6 +31,10 @@ When using a UDP address as a certificate source, the server must support [DTLS]
   # tls_cert = "/etc/telegraf/cert.pem"
   # tls_key = "/etc/telegraf/key.pem"
   # tls_server_name = "myhost.example.org"
+
+  ## Set the proxy URL
+  # use_proxy = true
+  # proxy_url = "http://localhost:8888"
 ```
 
 ## Metrics
@@ -57,7 +62,7 @@ When using a UDP address as a certificate source, the server must support [DTLS]
     - startdate (int, seconds)
     - enddate (int, seconds)
 
-## Example output
+## Example Output
 
 ```shell
 x509_cert,common_name=ubuntu,source=/etc/ssl/certs/ssl-cert-snakeoil.pem,verification=valid age=7693222i,enddate=1871249033i,expiry=307666777i,startdate=1555889033i,verification_code=0i 1563582256000000000
