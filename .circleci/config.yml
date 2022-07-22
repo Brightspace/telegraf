@@ -84,8 +84,11 @@ commands:
             equal: [ "386", << parameters.arch >> ]
           steps:
             - run: echo 'export RACE="-race"' >> $BASH_ENV
-      - run: |
-          GOARCH=<< parameters.arch >> ./<< parameters.gotestsum >> -- ${RACE} -short -cover -coverprofile=coverage.out ./...
+      - run:
+          # D2L plan to slow for default 10m timeout
+          no_output_timeout: 60m
+          command: |
+            GOARCH=<< parameters.arch >> ./<< parameters.gotestsum >> -- ${RACE} -short -cover -coverprofile=coverage.out ./...
       - when:
           condition:
             and:
@@ -225,7 +228,8 @@ jobs:
     executor:
         name: win/default
         shell: bash.exe
-        size: xlarge
+        # D2L plan does not support xlarge
+        # size: xlarge
     steps:
       - test-go:
           os: windows
