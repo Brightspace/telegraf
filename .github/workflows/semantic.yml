@@ -1,11 +1,9 @@
 ---
 name: "Semantic PR and Commit Messages"
 
+# Disabled in the D2L fork (third party actions cannot be run in this repo)
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, edited]
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
   semantic:

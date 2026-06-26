@@ -1,0 +1,119 @@
+name: build-package
+on:
+  push:
+    tags:
+    # Tag format: d2l-<telegraf-version>-build<number> (e.g. d2l-1.23.1-build227)
+    - "d2l-*"
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-linux:
+    name: Test (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: Brightspace/third-party-actions@actions/checkout
+
+    - uses: Brightspace/third-party-actions@actions/setup-go
+      with:
+        go-version: "1.18"
+
+    # Mirrors the CircleCI test-go-linux gate
+    - name: Run tests
+      run: |
+        make deps
+        make tidy
+        make check
+        make check-deps
+        make test race_detector="-race"
+
+  test-windows:
+    name: Test (Windows)
+    runs-on: windows-latest
+
+    steps:
+    - uses: Brightspace/third-party-actions@actions/checkout
+
+    - uses: Brightspace/third-party-actions@actions/setup-go
+      with:
+        go-version: "1.18"
+
+    # Mirrors the CircleCI test-go-windows gate
+    - name: Run tests
+      shell: bash
+      run: go test -short -race ./...
+
+  build:
+    name: Build packages
+    needs: [test-linux, test-windows]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: Brightspace/third-party-actions@actions/checkout
+
+    - uses: Brightspace/third-party-actions@actions/setup-go
+      with:
+        go-version: "1.18"
+
+    - name: Compute version
+      id: version
+      run: |
+        # On pull requests there is no release tag; use a placeholder version so
+        # the build/packaging can be exercised without tag validation.
+        if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+          version="$(cat build_version.txt)-pr${{ github.event.pull_request.number }}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "gitsha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        if [[ ! "${GITHUB_REF_NAME}" =~ ^d2l-[0-9]+\.[0-9]+\.[0-9]+-build[0-9]+$ ]]; then
+          echo "::error::Tag '${GITHUB_REF_NAME}' must match d2l-<telegraf-version>-build<number> (e.g. d2l-1.23.1-build227)"
+          exit 1
+        fi
+
+        version="${GITHUB_REF_NAME#d2l-}"
+
+        expected="$(cat build_version.txt)"
+        if [[ "${version}" != "${expected}-build"* ]]; then
+          echo "::error::Tag telegraf-version '${version%-build*}' does not match build_version.txt (${expected})"
+          exit 1
+        fi
+
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
+        echo "gitsha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+    - name: Build packages
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        export PATH="$PATH:$(go env GOPATH)/bin"
+        command -v fpm >/dev/null || sudo gem install --no-document fpm
+        make versioninfo version="$VERSION"
+        make package \
+          version="$VERSION" \
+          tar_version="$VERSION" \
+          deb_version="$VERSION-1" \
+          deb_iteration=1 \
+          include_packages="windows_amd64.zip static_linux_amd64.tar.gz amd64.deb"
+        test -f build/windows-amd64/telegraf.exe
+
+    - name: Stage package input
+      run: |
+        mkdir -p package-input/dist
+        cp build/windows-amd64/telegraf.exe package-input/
+        cp d2l.telegraf.nuspec package-input/
+        cp build/dist/*_static_linux_amd64.tar.gz package-input/dist/
+        cp build/dist/*_amd64.deb package-input/dist/
+        echo "${{ steps.version.outputs.version }}" > package-input/version.txt
+        echo "${{ steps.version.outputs.gitsha }}" > package-input/gitsha.txt
+
+    - uses: Brightspace/third-party-actions@actions/upload-artifact
+      if: github.event_name == 'push'
+      with:
+        name: telegraf-package-input
+        path: package-input/
+        if-no-files-found: error

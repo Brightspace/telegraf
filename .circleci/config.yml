@@ -778,6 +778,7 @@ workflows:
                 - master
 
   d2l:
+    when: false
     jobs:
 
       # Linux

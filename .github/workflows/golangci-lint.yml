@@ -1,14 +1,7 @@
 name: golangci-lint
+# Disabled in the D2L fork (third party actions cannot be run in this repo)
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
-  schedule:
-    # Trigger every day at 16:00 UTC
-    - cron:  '0 16 * * *'
+  workflow_dispatch:
 jobs:
   golangci-pr:
     if: github.ref != 'refs/heads/master'
