@@ -44,7 +44,15 @@ jobs:
     # Mirrors the CircleCI test-go-windows gate
     - name: Run tests
       shell: bash
-      run: go test -short -race ./...
+      # Point TMP/TEMP at a path with no 8.3 short-name truncation. The default
+      # runner temp dir (C:\Users\RUNNER~1\...) makes the haproxy plugin tests
+      # compare a short-form socket path against a long-form glob result.
+      env:
+        TMP: C:\Temp
+        TEMP: C:\Temp
+      run: |
+        mkdir -p /c/Temp
+        go test -short -race ./...
 
   build:
     name: Build packages

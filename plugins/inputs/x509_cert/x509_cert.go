@@ -153,7 +153,14 @@ func (c *X509Cert) getCert(u *url.URL, timeout time.Duration) ([]*x509.Certifica
 
 		return certs, nil
 	case "file":
-		content, err := os.ReadFile(u.Path)
+		filename := u.Path
+		if u.Host != "" {
+			// On Windows an absolute path such as C:\foo is rewritten to
+			// file://C:/foo, so url.Parse treats the drive (C:) as the host.
+			// Rejoin it with the path to recover the full filename.
+			filename = u.Host + u.Path
+		}
+		content, err := os.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}
